@@ -9,6 +9,10 @@ SCREEN_WIDTH     = 40      ; 遊戲畫面寬度
 SCREEN_HEIGHT    = 20      ; 遊戲畫面高度
 MAX_FRUITS       = 5       ; 最多水果數量
 PLAYER_ROW       = 18      ; 玩家籃子的行位置
+MAX_LEVEL       = 5       ; 最大關卡數
+LEVEL_UP_SCORE  = 30      ; 每關所需分數
+BASE_SPEED      = 200     ; 基礎遊戲速度(ms)
+MIN_SPEED       = 50      ; 最小遊戲速度
 
 ; ============================================================================
 ; 資料區
@@ -18,6 +22,7 @@ PLAYER_ROW       = 18      ; 玩家籃子的行位置
     playerPos       DWORD 20             ; 玩家位置(列) 測試123123123
     score           DWORD 0              ; 分數
     gameRunning     DWORD 1              ; 遊戲狀態456
+    speed           DWORD 200            ; 遊戲速度(ms)
     
     ; 水果陣列 - 每個水果 4 個 DWORD: X, Y, active(1/0), type
     fruits          DWORD MAX_FRUITS * 4 dup(0)
@@ -27,11 +32,20 @@ PLAYER_ROW       = 18      ; 玩家籃子的行位置
     instructMsg     BYTE "使用 A/D 鍵移動籃子，Q 鍵退出", 13, 10, 0
     scoreMsg        BYTE "分數: ", 0
     gameOverMsg     BYTE "遊戲結束! 按任意鍵退出...", 13, 10, 0
+    WinMsg          BYTE "你贏了！", 0
     
     ; 遊戲符號
     playerChar      BYTE "[===]", 0        ; 玩家籃子
     fruitChars      BYTE "ABCDEFG", 0      ; 水果符號
-    borderChar      BYTE "-|+", 0         ; 邊框符號
+    borderChar      BYTE "-|+", 0          ; 邊框符號
+
+    difficulty      DWORD 1              ; 難度等級 (1-簡單, 2-普通, 3-困難)
+    difficultyMsg   BYTE "選擇難度 (1-簡單, 2-普通, 3-困難): ", 0
+    difficultyNames BYTE "簡單", 0
+                    BYTE "普通", 0
+                    BYTE "困難", 0
+    currentDiffMsg  BYTE "當前難度: ", 0
+    invalidInputMsg BYTE "無效輸入，請選擇1-3", 0
     
 .code
 ; ============================================================================
@@ -53,12 +67,45 @@ main PROC
         call ProcessInput
         call UpdateGame
         call DrawGame
-        mov eax, 150            ; 遊戲速度
+        mov eax, speed          ; 使用動態速度
         call Delay
+        
+        ; 檢查是否升級
+        mov eax, score
+        xor edx, edx
+        mov ecx, LEVEL_UP_SCORE
+        div ecx
+        inc eax                 ; 計算當前應屬關卡
+        
+        ; 確保不超過最大關卡
+        cmp eax, MAX_LEVEL
+        jle @F
+        mov eax, MAX_LEVEL
+    @@:
+        mov difficulty, eax
+        
+        ; 更新遊戲速度 (隨關卡加快)
+        mov eax, BASE_SPEED
+        mov ebx, difficulty
+        shr eax, 1              ; 每關速度減半
+        cmp eax, MIN_SPEED
+        jge @F
+        mov eax, MIN_SPEED      ; 不要低於最小速度
+    @@:
+        mov speed, eax
+        
+        ; 勝利條件 (通過所有關卡)
+        cmp score, LEVEL_UP_SCORE * MAX_LEVEL
+        jl ContinueGame
+        mov gameRunning, 0
+    ContinueGame:
     .endw
     
     ; 遊戲結束
     call ClearScreen
+    mov edx, offset WinMsg
+    call WriteString
+    call Crlf
     mov edx, OFFSET gameOverMsg
     call WriteString
     call ReadChar
@@ -151,12 +198,25 @@ UpdateGame ENDP
 ; 添加新水果
 ; ============================================================================
 AddFruit PROC uses esi edi eax ebx ecx edx
-    xor esi, esi
+    ; 計算生成機率 (使用difficulty而不是level)
+    mov eax, 100
+    call RandomRange
+    
+    ; 基礎機率 + 難度加成 (15% + 5% per difficulty level)
+    mov ebx, 50                 ; 基礎機率 15%
+    mov ecx, difficulty
+    imul ecx, 5                 ; 每級難度增加5%
+    add ebx, ecx
+    
+    cmp eax, ebx
+    jge @F                      ; 如果隨機數大於機率值則不生成
+    
+    xor esi, esi                ; 從頭開始搜索
     
     ; 尋找空的水果位置
     .while esi < MAX_FRUITS
         mov eax, esi
-        mov ecx, 16         ; 每個水果 4 個 DWORD = 16 bytes
+        mov ecx, 16             ; 每個水果 4 個 DWORD = 16 bytes
         mul ecx
         add eax, OFFSET fruits
         mov edi, eax
@@ -169,8 +229,13 @@ AddFruit PROC uses esi edi eax ebx ecx edx
         mov eax, SCREEN_WIDTH - 2
         call RandomRange
         inc eax                 ; 避免在邊框上，X範圍 1 到 38
-        mov [edi], eax         ; X 位置
-        mov DWORD PTR [edi + 4], 1     ; Y 位置（從第二行開始）
+        mov [edi], eax          ; X 位置
+        
+        ; 設置初始Y位置 (根據難度調整)
+        mov DWORD PTR [edi + 4], 1     ; 基礎Y位置
+        mov eax, difficulty
+        add DWORD PTR [edi + 4], eax   ; 難度越高初始位置越低
+        
         mov DWORD PTR [edi + 8], 1     ; 設為活躍
         
         ; 設置水果類型
@@ -184,6 +249,7 @@ AddFruit PROC uses esi edi eax ebx ecx edx
     .endw
     
 Done:
+@@:
     ret
 AddFruit ENDP
 
@@ -281,6 +347,16 @@ DrawGame PROC uses eax
     mov eax, white
     call SetTextColor
     call DisplayScore
+    ; 顯示關卡
+    mov eax, white
+    call SetTextColor
+    mov dl, 20
+    mov dh, SCREEN_HEIGHT + 1
+    call Gotoxy
+    mov edx, OFFSET difficultyMsg
+    call WriteString
+    mov eax, difficulty
+    call WriteDec
     ret
 DrawGame ENDP
 
