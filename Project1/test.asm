@@ -1,64 +1,64 @@
-; ����G�C�� - Irvine32 ����
-; �ϥ���L���k�䱱���x�l����������G 测试是测试
+; 接水果遊戲 - Irvine32 版本
+; 使用鍵盤左右鍵控制籃子接掉落的水果
 
 INCLUDE Irvine32.inc
 
 ; ============================================================================
-; �`�Ʃw�q
+; 常數定義
 ; ============================================================================
-SCREEN_WIDTH     = 40      ; �C���e���e��
-SCREEN_HEIGHT    = 20      ; �C���e������
-MAX_FRUITS       = 5       ; �̦h��G�ƶq
-PLAYER_ROW       = 18      ; ���a�x�l�����m
+SCREEN_WIDTH     = 40      ; 遊戲畫面寬度
+SCREEN_HEIGHT    = 20      ; 遊戲畫面高度
+MAX_FRUITS       = 5       ; 最多水果數量
+PLAYER_ROW       = 18      ; 玩家籃子的行位置
 
 ; ============================================================================
-; ��ư�
+; 資料區
 ; ============================================================================
 .data
-    ; �C���ܼ�
-    playerPos       DWORD 20             ; ���a��m(�C) ����123123123
-    score           DWORD 0              ; ����
-    gameRunning     DWORD 1              ; �C�����A456
+    ; 遊戲變數
+    playerPos       DWORD 20             ; 玩家位置(列) 測試123123123
+    score           DWORD 0              ; 分數
+    gameRunning     DWORD 1              ; 遊戲狀態456
     
-    ; ��G�}�C - �C�Ӥ�G 4 �� DWORD: X, Y, active(1/0), type
+    ; 水果陣列 - 每個水果 4 個 DWORD: X, Y, active(1/0), type
     fruits          DWORD MAX_FRUITS * 4 dup(0)
     
-    ; �r����
-    titleMsg        BYTE "����G�C��", 13, 10, 0
-    instructMsg     BYTE "�ϥ� A/D �䲾���x�l�AQ ��h�X", 13, 10, 0
-    scoreMsg        BYTE "����: ", 0
-    gameOverMsg     BYTE "�C������! ����N��h�X...", 13, 10, 0
+    ; 字串資料
+    titleMsg        BYTE "接水果遊戲", 13, 10, 0
+    instructMsg     BYTE "使用 A/D 鍵移動籃子，Q 鍵退出", 13, 10, 0
+    scoreMsg        BYTE "分數: ", 0
+    gameOverMsg     BYTE "遊戲結束! 按任意鍵退出...", 13, 10, 0
     
-    ; �C���Ÿ�
-    playerChar      BYTE "[===]", 0        ; ���a�x�l
-    fruitChars      BYTE "ABCDEFG", 0      ; ��G�Ÿ�
-    borderChar      BYTE "-|+", 0         ; ��زŸ�
+    ; 遊戲符號
+    playerChar      BYTE "[===]", 0        ; 玩家籃子
+    fruitChars      BYTE "ABCDEFG", 0      ; 水果符號
+    borderChar      BYTE "-|+", 0         ; 邊框符號
     
 .code
 ; ============================================================================
-; �D�{��
+; 主程式
 ; ============================================================================
 main PROC
     call InitGame
     
-    ; ��ܹC������
+    ; 顯示遊戲說明
     mov edx, OFFSET titleMsg
     call WriteString
     mov edx, OFFSET instructMsg
     call WriteString
     call WaitMsg
     
-    ; �C���D�`��
+    ; 遊戲主循環
     .while gameRunning == 1
         call ClearScreen
         call ProcessInput
         call UpdateGame
         call DrawGame
-        mov eax, 150            ; �C���t��
+        mov eax, 150            ; 遊戲速度
         call Delay
     .endw
     
-    ; �C������
+    ; 遊戲結束
     call ClearScreen
     mov edx, OFFSET gameOverMsg
     call WriteString
@@ -68,40 +68,40 @@ main PROC
 main ENDP
 
 ; ============================================================================
-; ��l�ƹC��
+; 初始化遊戲
 ; ============================================================================
 InitGame PROC uses ecx edi eax
-    ; �M�Ť�G�}�C
+    ; 清空水果陣列
     mov ecx, MAX_FRUITS * 4
     mov edi, OFFSET fruits
     xor eax, eax
     rep stosd
     
-    ; �]�m��l���ƩM���a��m
+    ; 設置初始分數和玩家位置
     mov score, 0
     mov playerPos, 20
     
-    ; ��l���H���ƺؤl
+    ; 初始化隨機數種子
     call Randomize
     
-    ; �]�m��r�C�⬰�զ�
+    ; 設置文字顏色為白色
     mov eax, white
     call SetTextColor
     ret
 InitGame ENDP
 
 ; ============================================================================
-; �B�z��J
+; 處理輸入
 ; ============================================================================
 ProcessInput PROC uses eax
     mov eax, 10            ; 10ms timeout
-    call ReadKey           ; �D����Ū��
-    jz NoInput             ; �S������
+    call ReadKey           ; 非阻塞讀取
+    jz NoInput             ; 沒有按鍵
     
-    ; �ର�j�g
-    and al, 11011111b      ; �N�p�g�ର�j�g
+    ; 轉為大寫
+    and al, 11011111b      ; 將小寫轉為大寫
     
-    ; A �� - �V������
+    ; A 鍵 - 向左移動
     cmp al, 'A'
     jne @F
     cmp playerPos, 1
@@ -109,7 +109,7 @@ ProcessInput PROC uses eax
     dec playerPos
     @@:
     
-    ; D �� - �V�k����
+    ; D 鍵 - 向右移動
     cmp al, 'D'
     jne @F
     mov eax, playerPos
@@ -119,7 +119,7 @@ ProcessInput PROC uses eax
     inc playerPos
     @@:
     
-    ; Q �� - �h�X�C��
+    ; Q 鍵 - 退出遊戲
     cmp al, 'Q'
     jne NoInput
     mov gameRunning, 0
@@ -129,55 +129,55 @@ NoInput:
 ProcessInput ENDP
 
 ; ============================================================================
-; ��s�C���޿�
+; 更新遊戲邏輯
 ; ============================================================================
 UpdateGame PROC uses eax
-    ; �ͦ��s��G
+    ; 生成新水果
     mov eax, 100
     call RandomRange
-    cmp eax, 20            ; 20% ���v�ͦ���G
+    cmp eax, 20            ; 20% 機率生成水果
     jge @F
     call AddFruit
     @@:
     
-    ; ��s�Ҧ���G��m
+    ; 更新所有水果位置
     call UpdateFruits
     
-    ; �I���˴�
+    ; 碰撞檢測
     call CheckCollisions
     ret
 UpdateGame ENDP
 
 ; ============================================================================
-; �K�[�s��G
+; 添加新水果
 ; ============================================================================
 AddFruit PROC uses esi edi eax ebx ecx edx
     xor esi, esi
     
-    ; �M��Ū���G��m
+    ; 尋找空的水果位置
     .while esi < MAX_FRUITS
         mov eax, esi
-        mov ecx, 16         ; �C�Ӥ�G 4 �� DWORD = 16 bytes
+        mov ecx, 16         ; 每個水果 4 個 DWORD = 16 bytes
         mul ecx
         add eax, OFFSET fruits
         mov edi, eax
         
-        ; �ˬd�O�_���D
+        ; 檢查是否活躍
         cmp DWORD PTR [edi + 8], 0
         jne NextFruit
         
-        ; �]�m�s��G
+        ; 設置新水果
         mov eax, SCREEN_WIDTH - 2
         call RandomRange
-        inc eax                 ; �קK�b��ؤW�AX�d�� 1 �� 38
-        mov [edi], eax         ; X ��m
-        mov DWORD PTR [edi + 4], 1     ; Y ��m�]�q�ĤG��}�l�^
-        mov DWORD PTR [edi + 8], 1     ; �]�����D
+        inc eax                 ; 避免在邊框上，X範圍 1 到 38
+        mov [edi], eax         ; X 位置
+        mov DWORD PTR [edi + 4], 1     ; Y 位置（從第二行開始）
+        mov DWORD PTR [edi + 8], 1     ; 設為活躍
         
-        ; �]�m��G����
+        ; 設置水果類型
         mov eax, 7
         call RandomRange
-        mov DWORD PTR [edi + 12], eax  ; ��G����
+        mov DWORD PTR [edi + 12], eax  ; 水果類型
         jmp Done
         
     NextFruit:
@@ -189,7 +189,7 @@ Done:
 AddFruit ENDP
 
 ; ============================================================================
-; ��s��G��m
+; 更新水果位置
 ; ============================================================================
 UpdateFruits PROC uses esi eax ecx
     xor esi, esi
@@ -200,17 +200,17 @@ UpdateFruits PROC uses esi eax ecx
         mul ecx
         add eax, OFFSET fruits
         
-        ; �ˬd��G�O�_���D
+        ; 檢查水果是否活躍
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        ; ���ʤ�G�V�U
+        ; 移動水果向下
         inc DWORD PTR [eax + 4]
         
-        ; �ˬd�O�_�쩳
+        ; 檢查是否到底
         cmp DWORD PTR [eax + 4], SCREEN_HEIGHT - 1
         jl NextFruit
-        mov DWORD PTR [eax + 8], 0    ; �]���D���D
+        mov DWORD PTR [eax + 8], 0    ; 設為非活躍
         
     NextFruit:
         inc esi
@@ -219,7 +219,7 @@ UpdateFruits PROC uses esi eax ecx
 UpdateFruits ENDP
 
 ; ============================================================================
-; �I���˴�
+; 碰撞檢測
 ; ============================================================================
 CheckCollisions PROC uses esi eax ebx ecx edx
     xor esi, esi
@@ -230,18 +230,18 @@ CheckCollisions PROC uses esi eax ebx ecx edx
         mul ecx
         add eax, OFFSET fruits
         
-        ; �ˬd��G�O�_���D
+        ; 檢查水果是否活躍
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        mov ebx, [eax]          ; ��G X
-        mov ecx, [eax + 4]      ; ��G Y
+        mov ebx, [eax]          ; 水果 X
+        mov ecx, [eax + 4]      ; 水果 Y
         
-        ; �ˬd�O�_�b���a��
+        ; 檢查是否在玩家行
         cmp ecx, PLAYER_ROW
         jne NextFruit
         
-        ; �ˬd X �d��I��
+        ; 檢查 X 範圍碰撞
         mov edx, playerPos
         cmp ebx, edx
         jl NextFruit
@@ -249,9 +249,9 @@ CheckCollisions PROC uses esi eax ebx ecx edx
         cmp ebx, edx
         jg NextFruit
         
-        ; �I���o��
-        mov DWORD PTR [eax + 8], 0    ; ��G����
-        add score, 10                 ; �W�[����
+        ; 碰撞發生
+        mov DWORD PTR [eax + 8], 0    ; 水果消失
+        add score, 10                 ; 增加分數
         
     NextFruit:
         inc esi
@@ -260,25 +260,25 @@ CheckCollisions PROC uses esi eax ebx ecx edx
 CheckCollisions ENDP
 
 ; ============================================================================
-; ø�s�C���e��
+; 繪製遊戲畫面
 ; ============================================================================
 DrawGame PROC uses eax
-    ; ø�s���
+    ; 繪製邊框
     mov eax, white
     call SetTextColor
     call DrawBorder
     
-    ; ø�s��G
+    ; 繪製水果
     mov eax, yellow
     call SetTextColor
     call DrawFruits
     
-    ; ø�s���a
+    ; 繪製玩家
     mov eax, green
     call SetTextColor
     call DrawPlayer
     
-    ; ��ܤ���
+    ; 顯示分數
     mov eax, white
     call SetTextColor
     call DisplayScore
@@ -286,10 +286,10 @@ DrawGame PROC uses eax
 DrawGame ENDP
 
 ; ============================================================================
-; ø�s���
+; 繪製邊框
 ; ============================================================================
 DrawBorder PROC uses ecx edx
-    ; �W���
+    ; 上邊框
     mov dl, 0            ; Column
     mov dh, 0            ; Row
     call Gotoxy
@@ -300,7 +300,7 @@ DrawBorder PROC uses ecx edx
         dec ecx
     .endw
     
-    ; �U���
+    ; 下邊框
     mov dl, 0
     mov dh, SCREEN_HEIGHT - 1
     call Gotoxy
@@ -311,7 +311,7 @@ DrawBorder PROC uses ecx edx
         dec ecx
     .endw
     
-    ; ���k���
+    ; 左右邊框
     mov ebx, 1
     .while ebx < SCREEN_HEIGHT - 1
         mov dl, 0
@@ -332,7 +332,7 @@ DrawBorder PROC uses ecx edx
 DrawBorder ENDP
 
 ; ============================================================================
-; ø�s��G
+; 繪製水果
 ; ============================================================================
 DrawFruits PROC uses esi eax ebx ecx edx
     xor esi, esi
@@ -343,19 +343,19 @@ DrawFruits PROC uses esi eax ebx ecx edx
         mul ecx
         add eax, OFFSET fruits
         
-        cmp DWORD PTR [eax + 8], 1    ; �p�G��G���D
+        cmp DWORD PTR [eax + 8], 1    ; 如果水果活躍
         jne NextFruit
         
         mov edx, [eax]              ; X
         mov ebx, [eax + 4]          ; Y
-        mov ecx, [eax + 12]         ; ����
+        mov ecx, [eax + 12]         ; 類型
         
-        ; ���ʴ�Ш��G��m
+        ; 移動游標到水果位置
         mov dl, dl
         mov dh, bl
         call Gotoxy
         
-        ; ø�s��G�Ÿ�
+        ; 繪製水果符號
         add ecx, 'A'
         mov al, cl
         call WriteChar
@@ -367,14 +367,14 @@ DrawFruits PROC uses esi eax ebx ecx edx
 DrawFruits ENDP
 
 ; ============================================================================
-; ø�s���a
+; 繪製玩家
 ; ============================================================================
 DrawPlayer PROC uses eax edx
     mov dl, BYTE PTR playerPos
     mov dh, PLAYER_ROW
     call Gotoxy
     
-    ; ø�s�x�l
+    ; 繪製籃子
     mov al, '['
     call WriteChar
     mov al, '='
@@ -387,7 +387,7 @@ DrawPlayer PROC uses eax edx
 DrawPlayer ENDP
 
 ; ============================================================================
-; ��ܤ���
+; 顯示分數
 ; ============================================================================
 DisplayScore PROC uses eax edx
     mov dl, 0
@@ -403,7 +403,7 @@ DisplayScore PROC uses eax edx
 DisplayScore ENDP
 
 ; ============================================================================
-; �M���ù�
+; 清除螢幕
 ; ============================================================================
 ClearScreen PROC
     call Clrscr
