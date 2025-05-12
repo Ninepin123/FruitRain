@@ -1,64 +1,64 @@
-; ±µ¤ôªG¹CÀ¸ - Irvine32 ª©¥»
-; ¨Ï¥ÎÁä½L¥ª¥kÁä±±¨îÄx¤l±µ±¼¸¨ªº¤ôªG
+; ï¿½ï¿½ï¿½ï¿½Gï¿½Cï¿½ï¿½ - Irvine32 ï¿½ï¿½ï¿½ï¿½
+; ï¿½Ï¥ï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½kï¿½ä±±ï¿½ï¿½ï¿½xï¿½lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½G æµ‹è¯•æ˜¯æµ‹è¯•
 
 INCLUDE Irvine32.inc
 
 ; ============================================================================
-; ±`¼Æ©w¸q
+; ï¿½`ï¿½Æ©wï¿½q
 ; ============================================================================
-SCREEN_WIDTH     = 40      ; ¹CÀ¸µe­±¼e«×
-SCREEN_HEIGHT    = 20      ; ¹CÀ¸µe­±°ª«×
-MAX_FRUITS       = 5       ; ³Ì¦h¤ôªG¼Æ¶q
-PLAYER_ROW       = 18      ; ª±®aÄx¤lªº¦æ¦ì¸m
+SCREEN_WIDTH     = 40      ; ï¿½Cï¿½ï¿½ï¿½eï¿½ï¿½ï¿½eï¿½ï¿½
+SCREEN_HEIGHT    = 20      ; ï¿½Cï¿½ï¿½ï¿½eï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+MAX_FRUITS       = 5       ; ï¿½Ì¦hï¿½ï¿½Gï¿½Æ¶q
+PLAYER_ROW       = 18      ; ï¿½ï¿½ï¿½aï¿½xï¿½lï¿½ï¿½ï¿½ï¿½ï¿½m
 
 ; ============================================================================
-; ¸ê®Æ°Ï
+; ï¿½ï¿½Æ°ï¿½
 ; ============================================================================
 .data
-    ; ¹CÀ¸ÅÜ¼Æ
-    playerPos       DWORD 20             ; ª±®a¦ì¸m(¦C) ´ú¸Õ123123123
-    score           DWORD 0              ; ¤À¼Æ
-    gameRunning     DWORD 1              ; ¹CÀ¸ª¬ºA456
+    ; ï¿½Cï¿½ï¿½ï¿½Ü¼ï¿½
+    playerPos       DWORD 20             ; ï¿½ï¿½ï¿½aï¿½ï¿½m(ï¿½C) ï¿½ï¿½ï¿½ï¿½123123123
+    score           DWORD 0              ; ï¿½ï¿½ï¿½ï¿½
+    gameRunning     DWORD 1              ; ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½A456
     
-    ; ¤ôªG°}¦C - ¨C­Ó¤ôªG 4 ­Ó DWORD: X, Y, active(1/0), type
+    ; ï¿½ï¿½Gï¿½}ï¿½C - ï¿½Cï¿½Ó¤ï¿½G 4 ï¿½ï¿½ DWORD: X, Y, active(1/0), type
     fruits          DWORD MAX_FRUITS * 4 dup(0)
     
-    ; ¦r¦ê¸ê®Æ
-    titleMsg        BYTE "±µ¤ôªG¹CÀ¸", 13, 10, 0
-    instructMsg     BYTE "¨Ï¥Î A/D Áä²¾°ÊÄx¤l¡AQ Áä°h¥X", 13, 10, 0
-    scoreMsg        BYTE "¤À¼Æ: ", 0
-    gameOverMsg     BYTE "¹CÀ¸µ²§ô! «ö¥ô·NÁä°h¥X...", 13, 10, 0
+    ; ï¿½rï¿½ï¿½ï¿½ï¿½
+    titleMsg        BYTE "ï¿½ï¿½ï¿½ï¿½Gï¿½Cï¿½ï¿½", 13, 10, 0
+    instructMsg     BYTE "ï¿½Ï¥ï¿½ A/D ï¿½ä²¾ï¿½ï¿½ï¿½xï¿½lï¿½AQ ï¿½ï¿½hï¿½X", 13, 10, 0
+    scoreMsg        BYTE "ï¿½ï¿½ï¿½ï¿½: ", 0
+    gameOverMsg     BYTE "ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½! ï¿½ï¿½ï¿½ï¿½Nï¿½ï¿½hï¿½X...", 13, 10, 0
     
-    ; ¹CÀ¸²Å¸¹
-    playerChar      BYTE "[===]", 0        ; ª±®aÄx¤l
-    fruitChars      BYTE "ABCDEFG", 0      ; ¤ôªG²Å¸¹
-    borderChar      BYTE "-|+", 0         ; Ãä®Ø²Å¸¹
+    ; ï¿½Cï¿½ï¿½ï¿½Å¸ï¿½
+    playerChar      BYTE "[===]", 0        ; ï¿½ï¿½ï¿½aï¿½xï¿½l
+    fruitChars      BYTE "ABCDEFG", 0      ; ï¿½ï¿½Gï¿½Å¸ï¿½
+    borderChar      BYTE "-|+", 0         ; ï¿½ï¿½Ø²Å¸ï¿½
     
 .code
 ; ============================================================================
-; ¥Dµ{¦¡
+; ï¿½Dï¿½{ï¿½ï¿½
 ; ============================================================================
 main PROC
     call InitGame
     
-    ; Åã¥Ü¹CÀ¸»¡©ú
+    ; ï¿½ï¿½Ü¹Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     mov edx, OFFSET titleMsg
     call WriteString
     mov edx, OFFSET instructMsg
     call WriteString
     call WaitMsg
     
-    ; ¹CÀ¸¥D´`Àô
+    ; ï¿½Cï¿½ï¿½ï¿½Dï¿½`ï¿½ï¿½
     .while gameRunning == 1
         call ClearScreen
         call ProcessInput
         call UpdateGame
         call DrawGame
-        mov eax, 150            ; ¹CÀ¸³t«×
+        mov eax, 150            ; ï¿½Cï¿½ï¿½ï¿½tï¿½ï¿½
         call Delay
     .endw
     
-    ; ¹CÀ¸µ²§ô
+    ; ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     call ClearScreen
     mov edx, OFFSET gameOverMsg
     call WriteString
@@ -68,40 +68,40 @@ main PROC
 main ENDP
 
 ; ============================================================================
-; ªì©l¤Æ¹CÀ¸
+; ï¿½ï¿½lï¿½Æ¹Cï¿½ï¿½
 ; ============================================================================
 InitGame PROC uses ecx edi eax
-    ; ²MªÅ¤ôªG°}¦C
+    ; ï¿½Mï¿½Å¤ï¿½Gï¿½}ï¿½C
     mov ecx, MAX_FRUITS * 4
     mov edi, OFFSET fruits
     xor eax, eax
     rep stosd
     
-    ; ³]¸mªì©l¤À¼Æ©Mª±®a¦ì¸m
+    ; ï¿½]ï¿½mï¿½ï¿½lï¿½ï¿½ï¿½Æ©Mï¿½ï¿½ï¿½aï¿½ï¿½m
     mov score, 0
     mov playerPos, 20
     
-    ; ªì©l¤ÆÀH¾÷¼ÆºØ¤l
+    ; ï¿½ï¿½lï¿½ï¿½ï¿½Hï¿½ï¿½ï¿½ÆºØ¤l
     call Randomize
     
-    ; ³]¸m¤å¦rÃC¦â¬°¥Õ¦â
+    ; ï¿½]ï¿½mï¿½ï¿½rï¿½Cï¿½â¬°ï¿½Õ¦ï¿½
     mov eax, white
     call SetTextColor
     ret
 InitGame ENDP
 
 ; ============================================================================
-; ³B²z¿é¤J
+; ï¿½Bï¿½zï¿½ï¿½J
 ; ============================================================================
 ProcessInput PROC uses eax
     mov eax, 10            ; 10ms timeout
-    call ReadKey           ; «Dªý¶ëÅª¨ú
-    jz NoInput             ; ¨S¦³«öÁä
+    call ReadKey           ; ï¿½Dï¿½ï¿½ï¿½ï¿½Åªï¿½ï¿½
+    jz NoInput             ; ï¿½Sï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     
-    ; Âà¬°¤j¼g
-    and al, 11011111b      ; ±N¤p¼gÂà¬°¤j¼g
+    ; ï¿½à¬°ï¿½jï¿½g
+    and al, 11011111b      ; ï¿½Nï¿½pï¿½gï¿½à¬°ï¿½jï¿½g
     
-    ; A Áä - ¦V¥ª²¾°Ê
+    ; A ï¿½ï¿½ - ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     cmp al, 'A'
     jne @F
     cmp playerPos, 1
@@ -109,7 +109,7 @@ ProcessInput PROC uses eax
     dec playerPos
     @@:
     
-    ; D Áä - ¦V¥k²¾°Ê
+    ; D ï¿½ï¿½ - ï¿½Vï¿½kï¿½ï¿½ï¿½ï¿½
     cmp al, 'D'
     jne @F
     mov eax, playerPos
@@ -119,7 +119,7 @@ ProcessInput PROC uses eax
     inc playerPos
     @@:
     
-    ; Q Áä - °h¥X¹CÀ¸
+    ; Q ï¿½ï¿½ - ï¿½hï¿½Xï¿½Cï¿½ï¿½
     cmp al, 'Q'
     jne NoInput
     mov gameRunning, 0
@@ -129,55 +129,55 @@ NoInput:
 ProcessInput ENDP
 
 ; ============================================================================
-; §ó·s¹CÀ¸ÅÞ¿è
+; ï¿½ï¿½sï¿½Cï¿½ï¿½ï¿½Þ¿ï¿½
 ; ============================================================================
 UpdateGame PROC uses eax
-    ; ¥Í¦¨·s¤ôªG
+    ; ï¿½Í¦ï¿½ï¿½sï¿½ï¿½G
     mov eax, 100
     call RandomRange
-    cmp eax, 20            ; 20% ¾÷²v¥Í¦¨¤ôªG
+    cmp eax, 20            ; 20% ï¿½ï¿½ï¿½vï¿½Í¦ï¿½ï¿½ï¿½G
     jge @F
     call AddFruit
     @@:
     
-    ; §ó·s©Ò¦³¤ôªG¦ì¸m
+    ; ï¿½ï¿½sï¿½Ò¦ï¿½ï¿½ï¿½Gï¿½ï¿½m
     call UpdateFruits
     
-    ; ¸I¼²ÀË´ú
+    ; ï¿½Iï¿½ï¿½ï¿½Ë´ï¿½
     call CheckCollisions
     ret
 UpdateGame ENDP
 
 ; ============================================================================
-; ²K¥[·s¤ôªG
+; ï¿½Kï¿½[ï¿½sï¿½ï¿½G
 ; ============================================================================
 AddFruit PROC uses esi edi eax ebx ecx edx
     xor esi, esi
     
-    ; ´M§äªÅªº¤ôªG¦ì¸m
+    ; ï¿½Mï¿½ï¿½Åªï¿½ï¿½ï¿½Gï¿½ï¿½m
     .while esi < MAX_FRUITS
         mov eax, esi
-        mov ecx, 16         ; ¨C­Ó¤ôªG 4 ­Ó DWORD = 16 bytes
+        mov ecx, 16         ; ï¿½Cï¿½Ó¤ï¿½G 4 ï¿½ï¿½ DWORD = 16 bytes
         mul ecx
         add eax, OFFSET fruits
         mov edi, eax
         
-        ; ÀË¬d¬O§_¬¡ÅD
+        ; ï¿½Ë¬dï¿½Oï¿½_ï¿½ï¿½ï¿½D
         cmp DWORD PTR [edi + 8], 0
         jne NextFruit
         
-        ; ³]¸m·s¤ôªG
+        ; ï¿½]ï¿½mï¿½sï¿½ï¿½G
         mov eax, SCREEN_WIDTH - 2
         call RandomRange
-        inc eax                 ; Á×§K¦bÃä®Ø¤W¡AX½d³ò 1 ¨ì 38
-        mov [edi], eax         ; X ¦ì¸m
-        mov DWORD PTR [edi + 4], 1     ; Y ¦ì¸m¡]±q²Ä¤G¦æ¶}©l¡^
-        mov DWORD PTR [edi + 8], 1     ; ³]¬°¬¡ÅD
+        inc eax                 ; ï¿½×§Kï¿½bï¿½ï¿½Ø¤Wï¿½AXï¿½dï¿½ï¿½ 1 ï¿½ï¿½ 38
+        mov [edi], eax         ; X ï¿½ï¿½m
+        mov DWORD PTR [edi + 4], 1     ; Y ï¿½ï¿½mï¿½]ï¿½qï¿½Ä¤Gï¿½ï¿½}ï¿½lï¿½^
+        mov DWORD PTR [edi + 8], 1     ; ï¿½]ï¿½ï¿½ï¿½ï¿½ï¿½D
         
-        ; ³]¸m¤ôªGÃþ«¬
+        ; ï¿½]ï¿½mï¿½ï¿½Gï¿½ï¿½ï¿½ï¿½
         mov eax, 7
         call RandomRange
-        mov DWORD PTR [edi + 12], eax  ; ¤ôªGÃþ«¬
+        mov DWORD PTR [edi + 12], eax  ; ï¿½ï¿½Gï¿½ï¿½ï¿½ï¿½
         jmp Done
         
     NextFruit:
@@ -189,7 +189,7 @@ Done:
 AddFruit ENDP
 
 ; ============================================================================
-; §ó·s¤ôªG¦ì¸m
+; ï¿½ï¿½sï¿½ï¿½Gï¿½ï¿½m
 ; ============================================================================
 UpdateFruits PROC uses esi eax ecx
     xor esi, esi
@@ -200,17 +200,17 @@ UpdateFruits PROC uses esi eax ecx
         mul ecx
         add eax, OFFSET fruits
         
-        ; ÀË¬d¤ôªG¬O§_¬¡ÅD
+        ; ï¿½Ë¬dï¿½ï¿½Gï¿½Oï¿½_ï¿½ï¿½ï¿½D
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        ; ²¾°Ê¤ôªG¦V¤U
+        ; ï¿½ï¿½ï¿½Ê¤ï¿½Gï¿½Vï¿½U
         inc DWORD PTR [eax + 4]
         
-        ; ÀË¬d¬O§_¨ì©³
+        ; ï¿½Ë¬dï¿½Oï¿½_ï¿½ì©³
         cmp DWORD PTR [eax + 4], SCREEN_HEIGHT - 1
         jl NextFruit
-        mov DWORD PTR [eax + 8], 0    ; ³]¬°«D¬¡ÅD
+        mov DWORD PTR [eax + 8], 0    ; ï¿½]ï¿½ï¿½ï¿½Dï¿½ï¿½ï¿½D
         
     NextFruit:
         inc esi
@@ -219,7 +219,7 @@ UpdateFruits PROC uses esi eax ecx
 UpdateFruits ENDP
 
 ; ============================================================================
-; ¸I¼²ÀË´ú
+; ï¿½Iï¿½ï¿½ï¿½Ë´ï¿½
 ; ============================================================================
 CheckCollisions PROC uses esi eax ebx ecx edx
     xor esi, esi
@@ -230,18 +230,18 @@ CheckCollisions PROC uses esi eax ebx ecx edx
         mul ecx
         add eax, OFFSET fruits
         
-        ; ÀË¬d¤ôªG¬O§_¬¡ÅD
+        ; ï¿½Ë¬dï¿½ï¿½Gï¿½Oï¿½_ï¿½ï¿½ï¿½D
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        mov ebx, [eax]          ; ¤ôªG X
-        mov ecx, [eax + 4]      ; ¤ôªG Y
+        mov ebx, [eax]          ; ï¿½ï¿½G X
+        mov ecx, [eax + 4]      ; ï¿½ï¿½G Y
         
-        ; ÀË¬d¬O§_¦bª±®a¦æ
+        ; ï¿½Ë¬dï¿½Oï¿½_ï¿½bï¿½ï¿½ï¿½aï¿½ï¿½
         cmp ecx, PLAYER_ROW
         jne NextFruit
         
-        ; ÀË¬d X ½d³ò¸I¼²
+        ; ï¿½Ë¬d X ï¿½dï¿½ï¿½Iï¿½ï¿½
         mov edx, playerPos
         cmp ebx, edx
         jl NextFruit
@@ -249,9 +249,9 @@ CheckCollisions PROC uses esi eax ebx ecx edx
         cmp ebx, edx
         jg NextFruit
         
-        ; ¸I¼²µo¥Í
-        mov DWORD PTR [eax + 8], 0    ; ¤ôªG®ø¥¢
-        add score, 10                 ; ¼W¥[¤À¼Æ
+        ; ï¿½Iï¿½ï¿½ï¿½oï¿½ï¿½
+        mov DWORD PTR [eax + 8], 0    ; ï¿½ï¿½Gï¿½ï¿½ï¿½ï¿½
+        add score, 10                 ; ï¿½Wï¿½[ï¿½ï¿½ï¿½ï¿½
         
     NextFruit:
         inc esi
@@ -260,25 +260,25 @@ CheckCollisions PROC uses esi eax ebx ecx edx
 CheckCollisions ENDP
 
 ; ============================================================================
-; Ã¸»s¹CÀ¸µe­±
+; Ã¸ï¿½sï¿½Cï¿½ï¿½ï¿½eï¿½ï¿½
 ; ============================================================================
 DrawGame PROC uses eax
-    ; Ã¸»sÃä®Ø
+    ; Ã¸ï¿½sï¿½ï¿½ï¿½
     mov eax, white
     call SetTextColor
     call DrawBorder
     
-    ; Ã¸»s¤ôªG
+    ; Ã¸ï¿½sï¿½ï¿½G
     mov eax, yellow
     call SetTextColor
     call DrawFruits
     
-    ; Ã¸»sª±®a
+    ; Ã¸ï¿½sï¿½ï¿½ï¿½a
     mov eax, green
     call SetTextColor
     call DrawPlayer
     
-    ; Åã¥Ü¤À¼Æ
+    ; ï¿½ï¿½Ü¤ï¿½ï¿½ï¿½
     mov eax, white
     call SetTextColor
     call DisplayScore
@@ -286,10 +286,10 @@ DrawGame PROC uses eax
 DrawGame ENDP
 
 ; ============================================================================
-; Ã¸»sÃä®Ø
+; Ã¸ï¿½sï¿½ï¿½ï¿½
 ; ============================================================================
 DrawBorder PROC uses ecx edx
-    ; ¤WÃä®Ø
+    ; ï¿½Wï¿½ï¿½ï¿½
     mov dl, 0            ; Column
     mov dh, 0            ; Row
     call Gotoxy
@@ -300,7 +300,7 @@ DrawBorder PROC uses ecx edx
         dec ecx
     .endw
     
-    ; ¤UÃä®Ø
+    ; ï¿½Uï¿½ï¿½ï¿½
     mov dl, 0
     mov dh, SCREEN_HEIGHT - 1
     call Gotoxy
@@ -311,7 +311,7 @@ DrawBorder PROC uses ecx edx
         dec ecx
     .endw
     
-    ; ¥ª¥kÃä®Ø
+    ; ï¿½ï¿½ï¿½kï¿½ï¿½ï¿½
     mov ebx, 1
     .while ebx < SCREEN_HEIGHT - 1
         mov dl, 0
@@ -332,7 +332,7 @@ DrawBorder PROC uses ecx edx
 DrawBorder ENDP
 
 ; ============================================================================
-; Ã¸»s¤ôªG
+; Ã¸ï¿½sï¿½ï¿½G
 ; ============================================================================
 DrawFruits PROC uses esi eax ebx ecx edx
     xor esi, esi
@@ -343,19 +343,19 @@ DrawFruits PROC uses esi eax ebx ecx edx
         mul ecx
         add eax, OFFSET fruits
         
-        cmp DWORD PTR [eax + 8], 1    ; ¦pªG¤ôªG¬¡ÅD
+        cmp DWORD PTR [eax + 8], 1    ; ï¿½pï¿½Gï¿½ï¿½Gï¿½ï¿½ï¿½D
         jne NextFruit
         
         mov edx, [eax]              ; X
         mov ebx, [eax + 4]          ; Y
-        mov ecx, [eax + 12]         ; Ãþ«¬
+        mov ecx, [eax + 12]         ; ï¿½ï¿½ï¿½ï¿½
         
-        ; ²¾°Ê´å¼Ð¨ì¤ôªG¦ì¸m
+        ; ï¿½ï¿½ï¿½Ê´ï¿½Ð¨ï¿½ï¿½Gï¿½ï¿½m
         mov dl, dl
         mov dh, bl
         call Gotoxy
         
-        ; Ã¸»s¤ôªG²Å¸¹
+        ; Ã¸ï¿½sï¿½ï¿½Gï¿½Å¸ï¿½
         add ecx, 'A'
         mov al, cl
         call WriteChar
@@ -367,14 +367,14 @@ DrawFruits PROC uses esi eax ebx ecx edx
 DrawFruits ENDP
 
 ; ============================================================================
-; Ã¸»sª±®a
+; Ã¸ï¿½sï¿½ï¿½ï¿½a
 ; ============================================================================
 DrawPlayer PROC uses eax edx
     mov dl, BYTE PTR playerPos
     mov dh, PLAYER_ROW
     call Gotoxy
     
-    ; Ã¸»sÄx¤l
+    ; Ã¸ï¿½sï¿½xï¿½l
     mov al, '['
     call WriteChar
     mov al, '='
@@ -387,7 +387,7 @@ DrawPlayer PROC uses eax edx
 DrawPlayer ENDP
 
 ; ============================================================================
-; Åã¥Ü¤À¼Æ
+; ï¿½ï¿½Ü¤ï¿½ï¿½ï¿½
 ; ============================================================================
 DisplayScore PROC uses eax edx
     mov dl, 0
@@ -403,7 +403,7 @@ DisplayScore PROC uses eax edx
 DisplayScore ENDP
 
 ; ============================================================================
-; ²M°£¿Ã¹õ
+; ï¿½Mï¿½ï¿½ï¿½Ã¹ï¿½
 ; ============================================================================
 ClearScreen PROC
     call Clrscr
