@@ -16,9 +16,9 @@ PLAYER_ROW       = 18      ; 玩家籃子的行位置
 ; ============================================================================
 .data
     ; 遊戲變數
-    playerPos       DWORD 20             ; 玩家位置(列) 測試123
+    playerPos       DWORD 20             ; 玩家位置(列) 測試123123123
     score           DWORD 0              ; 分數
-    gameRunning     DWORD 1              ; 遊戲狀態
+    gameRunning     DWORD 1              ; 遊戲狀態456
     
     ; 水果陣列 - 每個水果 4 個 DWORD: X, Y, active(1/0), type
     fruits          DWORD MAX_FRUITS * 4 dup(0)
