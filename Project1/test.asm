@@ -16,7 +16,7 @@ PLAYER_ROW       = 18      ; 玩家籃子的行位置
 ; ============================================================================
 .data
     ; 遊戲變數
-    playerPos       DWORD 20             ; 玩家位置(列)
+    playerPos       DWORD 20             ; 玩家位置(列) 測試123
     score           DWORD 0              ; 分數
     gameRunning     DWORD 1              ; 遊戲狀態
     
