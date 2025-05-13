@@ -46,6 +46,28 @@ MIN_SPEED       = 50      ; 最小遊戲速度
                     BYTE "困難", 0
     currentDiffMsg  BYTE "當前難度: ", 0
     invalidInputMsg BYTE "無效輸入，請選擇1-3", 0
+    ;封面1
+    ;titleArt1 BYTE 13,10"  ________ ________  ___  ___  ___  _________     ________  ________  ___  ________  ",13,10,0
+    ;titleArt2 BYTE      " |\  _____\\   __  \|\  \|\  \|\  \|\___   ___\  |\   __  \|\   __  \|\  \|\   ___  \ ",13,10,0
+    ;titleArt3 BYTE      " \ \  \__/\ \  \|\  \ \  \\\  \ \  \|___ \  \_|  \ \  \|\  \ \  \|\  \ \  \ \  \\ \  \  ",13,10,0
+    ;titleArt4 BYTE      "  \ \   __\\ \   _  _\ \  \\\  \ \  \   \ \  \    \ \   _  _\ \   __  \ \  \ \  \\ \  \  ",13,10,0
+    ;titleArt5 BYTE      "   \ \  \_| \ \  \\  \\ \  \\\  \ \  \   \ \  \    \ \  \\  \\ \  \ \  \ \  \ \  \\ \  \ ",13,10,0
+    ;titleArt6 BYTE      "    \ \__\   \ \__\\ _\\ \_______\ \__\   \ \__\    \ \__\\ _\\ \__\ \__\ \__\ \__\\ \__\",13,10,0
+    ;titleArt7 BYTE      "     \|__|    \|__|\|__|\|_______|\|__|    \|__|     \|__|\|__|\|__|\|__|\|__|\|__| \|__|",13,10,0
+
+    ;封面2
+    titleArt1 BYTE 13,10,"  ________  _______   __    __  ______  ________        _______    ______   ______  __    __ ",13,10,0
+    titleArt2 BYTE       " |        \|       \ |  \  |  \|      \|        \      |       \  /      \ |      \|  \  |  \",13,10,0
+    titleArt3 BYTE       " | $$$$$$$$| $$$$$$$\| $$  | $$ \$$$$$$ \$$$$$$$$      | $$$$$$$\|  $$$$$$\ \$$$$$$| $$\ | $$",13,10,0
+    titleArt4 BYTE       " | $$__    | $$__| $$| $$  | $$  | $$     | $$         | $$__| $$| $$__| $$  | $$  | $$$\| $$",13,10,0
+    titleArt5 BYTE       " | $$  \   | $$    $$| $$  | $$  | $$     | $$         | $$    $$| $$    $$  | $$  | $$$$\ $$",13,10,0
+    titleArt6 BYTE       " | $$$$$   | $$$$$$$\| $$  | $$  | $$     | $$         | $$$$$$$\| $$$$$$$$  | $$  | $$\$$ $$",13,10,0
+    titleArt7 BYTE       " | $$      | $$  | $$| $$__/ $$ _| $$_    | $$         | $$  | $$| $$  | $$ _| $$_ | $$ \$$$$",13,10,0
+    titleArt8 BYTE       " | $$      | $$  | $$ \$$    $$|   $$ \   | $$         | $$  | $$| $$  | $$|   $$ \| $$  \$$$",13,10,0
+    titleArt9 BYTE       "  \$$       \$$   \$$  \$$$$$$  \$$$$$$    \$$          \$$   \$$ \$$   \$$ \$$$$$$ \$$   \$$",13,10,0
+
+
+    pressEnterMsg BYTE 13,10,"按 Enter 鍵開始遊戲...",13,10,0
     
 .code
 ; ============================================================================
@@ -53,7 +75,8 @@ MIN_SPEED       = 50      ; 最小遊戲速度
 ; ============================================================================
 main PROC
     call InitGame
-    
+    call ShowTitleScreen
+
     ; 顯示遊戲說明
     mov edx, OFFSET titleMsg
     call WriteString
@@ -135,6 +158,49 @@ InitGame PROC uses ecx edi eax
     call SetTextColor
     ret
 InitGame ENDP
+
+; =====================================================================
+; 顯示遊戲封面
+; =====================================================================
+ShowTitleScreen PROC
+    call ClearScreen
+    
+    ; 顯示遊戲標題 ASCII 藝術字
+    mov eax, cyan
+    call SetTextColor
+
+    mov edx, OFFSET titleArt1
+    call WriteString
+    mov edx, OFFSET titleArt2
+    call WriteString
+    mov edx, OFFSET titleArt3
+    call WriteString
+    mov edx, OFFSET titleArt4
+    call WriteString
+    mov edx, OFFSET titleArt5
+    call WriteString
+    mov edx, OFFSET titleArt6
+    call WriteString
+    mov edx, OFFSET titleArt7
+    call WriteString
+    mov edx, OFFSET titleArt8
+    call WriteString
+    mov edx, OFFSET titleArt9
+    call WriteString
+
+    ; 顯示提示訊息
+    mov eax, yellow
+    call SetTextColor
+    mov edx, OFFSET pressEnterMsg
+    call WriteString
+
+    ; 等待 Enter 鍵
+WaitForEnter:
+    call ReadChar
+    cmp al, 13          ; Enter 鍵 ASCII = 13
+    jne WaitForEnter
+    ret
+ShowTitleScreen ENDP
 
 ; ============================================================================
 ; 處理輸入
