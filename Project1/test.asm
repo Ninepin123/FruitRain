@@ -23,6 +23,13 @@ MIN_SPEED       = 50      ; 最小遊戲速度
     score           DWORD 0              ; 分數
     gameRunning     DWORD 1              ; 遊戲狀態456
     speed           DWORD 200            ; 遊戲速度(ms)
+    gamePaused      DWORD 0              ; 暫停狀態
+    pauseMsg        BYTE "遊戲暫停，按P繼續", 0
+    pauseDrawEnabled BYTE 1             ; 默認為1(啟用繪製)，0表示禁用
+    pauseDrawMsg    BYTE "暫停時繪製遊戲(按T切換): ", 0
+    enabledStr      BYTE "已啟用", 0
+    disabledStr     BYTE "已禁用", 0
+    resumeMsg       BYTE "遊戲將在 X 秒後恢復...", 0
     
     ; 水果陣列 - 每個水果 4 個 DWORD: X, Y, active(1/0), type
     fruits          DWORD MAX_FRUITS * 4 dup(0)
@@ -84,13 +91,37 @@ main PROC
     call WriteString
     call WaitMsg
     
-    ; 遊戲主循環
+   ; 遊戲主循環
     .while gameRunning == 1
-        call ClearScreen
-        call ProcessInput
-        call UpdateGame
-        call DrawGame
-        mov eax, speed          ; 使用動態速度
+    call ClearScreen
+    call ProcessInput
+    
+    cmp gamePaused, 1
+    je PausedState
+    
+    ; 非暫停狀態：正常更新和繪製
+    call UpdateGame
+    call DrawGame
+    jmp ContinueGameLoop
+    
+PausedState:
+    ; 顯示暫停訊息
+    mov eax, yellow
+    call SetTextColor
+    mov dl, 10
+    mov dh, 10
+    call Gotoxy
+    mov edx, OFFSET pauseMsg
+    call WriteString
+    
+    ; 檢查是否需要在暫停時繪製
+    cmp pauseDrawEnabled, 1
+    jne SkipPauseDraw
+    call DrawGame
+SkipPauseDraw:
+    
+    ContinueGameLoop:
+        mov eax, speed   ; 使用動態速度
         call Delay
         
         ; 檢查是否升級
@@ -210,36 +241,112 @@ ProcessInput PROC uses eax
     call ReadKey           ; 非阻塞讀取
     jz NoInput             ; 沒有按鍵
     
+    ; 保存原始按键值
+    push eax               ; 保存按键值以备后用
+    
     ; 轉為大寫
     and al, 11011111b      ; 將小寫轉為大寫
     
+    ; --- 所有状态下都处理的输入 ---
+    
     ; A 鍵 - 向左移動
     cmp al, 'A'
-    jne @F
+    jne NotAKey
     cmp playerPos, 1
-    jle @F
+    jle NotAKey
     dec playerPos
-    @@:
+NotAKey:
     
     ; D 鍵 - 向右移動
     cmp al, 'D'
-    jne @F
+    jne NotDKey
     mov eax, playerPos
     add eax, 6
     cmp eax, SCREEN_WIDTH
-    jge @F
+    jge NotDKey
     inc playerPos
-    @@:
+NotDKey:
     
     ; Q 鍵 - 退出遊戲
     cmp al, 'Q'
-    jne NoInput
+    jne NotQKey
     mov gameRunning, 0
+NotQKey:
+    
+    ; 恢复原始按键值
+    pop eax
+    and al, 11011111b      ; 將小寫轉為大寫
+    
+    ; --- 根据游戏状态处理特定输入 ---
+    
+    ; P 鍵 - 暫停/繼續遊戲
+    cmp al, 'P'
+    jne NotPKey
+    
+    ; 檢查當前狀態
+    cmp gamePaused, 1
+    je SetUnpause           ; 如果當前已暫停，則設置為取消暫停
+    
+    ; 設置為暫停
+    mov gamePaused, 1
+    jmp NotPKey
+    
+SetUnpause:
+    ; 顯示倒計時訊息
+    mov eax, yellow
+    call SetTextColor
+    mov dl, 10
+    mov dh, 14
+    call Gotoxy
+    mov edx, OFFSET resumeMsg
+    call WriteString
+    
+    ; 倒計時3秒
+    mov ecx, 3
+CountdownLoop:
+    push ecx                ; 保存計數器
+    
+    ; 顯示當前倒計時數字
+    mov dl, 19
+    mov dh, 14
+    call Gotoxy
+    mov eax, ecx
+    call WriteDec
+    
+    ; 延遲1秒
+    mov eax, 1000
+    call Delay
+    
+    pop ecx                 ; 恢復計數器
+    loop CountdownLoop
+    
+    ; 恢復遊戲
+    mov gamePaused, 0
+    
+    ; 清除倒計時訊息
+    mov dl, 10
+    mov dh, 14
+    call Gotoxy
+    mov ecx, 40             ; 清除大約40個字符的空間
+    mov al, ' '
+ClearMsgLoop:
+    call WriteChar
+    loop ClearMsgLoop
+    
+NotPKey:
+    
+    ; 检查游戏是否暂停（暂停时才处理特定输入）
+    cmp gamePaused, 1
+    jne NoInput
+    
+    ; T 鍵 - 切換暫停時的繪製選項 (只在暫停時有效)
+    cmp al, 'T'
+    jne NoInput
+    xor pauseDrawEnabled, 1    ; 切換暫停時的繪製選項
     
 NoInput:
     ret
 ProcessInput ENDP
-
 ; ============================================================================
 ; 更新遊戲邏輯
 ; ============================================================================
