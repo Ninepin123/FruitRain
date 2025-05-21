@@ -1,57 +1,69 @@
 INCLUDE Irvine32.inc
 INCLUDELIB Winmm.lib
 
-.386    ;rebase
-.model flat,stdcall
+.386
+.model flat, stdcall
 .stack 4096
 
 ExitProcess PROTO, dwExitCode:DWORD
 PlaySound PROTO, pszSound:PTR BYTE, hmod:DWORD, fdwSound:DWORD
+
 ; ============================================================================
 ; Constants Definition
 ; ============================================================================
 SCREEN_WIDTH     = 40      ; Game screen width
 SCREEN_HEIGHT    = 20      ; Game screen height
-MAX_FRUITS     = 5      ; Maximum number of fruits on screen
+MAX_FRUITS       = 5       ; Maximum number of fruits on screen
 PLAYER_ROW       = 18      ; Player basket row position
-MAX_LEVEL       = 5       ; Maximum level for speed scaling
-LEVEL_UP_SCORE  = 30      ; Score needed per level
-BASE_SPEED      = 400     ; Base game speed (ms)
-MIN_SPEED       = 50      ; Minimum game speed
-BOMB_TYPE       = 7       ; Bomb type identifier (0-6 for fruits, 7 for bomb)
-MAX_LIVES       = 3       ; Maximum number of lives
+MAX_LEVEL        = 5       ; Maximum level for speed scaling
+LEVEL_UP_SCORE   = 30      ; Score needed per level
+BASE_SPEED       = 400     ; Base game speed (ms)
+MIN_SPEED        = 50      ; Minimum game speed
+BOMB_TYPE        = 7       ; Bomb type identifier (0-6 for fruits, 7 for bomb)
+MAX_LIVES        = 3       ; Maximum number of lives
+
+; Color constants for SetTextColor
+red              = 12
+green            = 10
+blue             = 9
+yellow           = 14
+magenta          = 13
+cyan             = 11
+white            = 15
+lightRed         = 4
 
 ; ============================================================================
 ; Data Section
 ; ============================================================================
 .data
     ; Game variables
-    playerPos       DWORD ?                                         ; Player position (column) 
+    playerPos       DWORD ?                                         ; Player position (column)
     score           DWORD ?                                         ; Score
     lives           DWORD MAX_LIVES                                ; Player lives
     gameRunning     DWORD 1                                         ; Game state, =1 running, =0 stopped
     speed           DWORD 400                                       ; Game speed (ms)
     gamePaused      DWORD 0                                         ; Pause state
     pauseMsg        BYTE "Game paused, press P to continue", 0
-    resumeMsg       BYTE "Game will continue in  X seconds", 0  
+    resumeMsg       BYTE "Game will continue in  X seconds", 0
     scoreMsg        BYTE "Score: ", 0
     livesMsg        BYTE "Lives: ", 0
     gameOverMsg     BYTE "Game Over! ", 13, 10, 0
+    winMsg          BYTE "You Win! ", 13, 10, 0
+    yourScoreStr    BYTE "Your score: ", 0
     difficultyMsg   BYTE "Difficulty: ", 0
-    difficulty      DWORD   2       ; 預設難度為 Normal
-    pressEnterMsg BYTE 13,10,"Press Enter key to start game...",13,10,0    
+    difficulty      DWORD 2                                         ; Default difficulty: Normal
+    pressEnterMsg   BYTE 13,10,"Press Enter key to start game...",13,10,0
     baseSpeed       DWORD ?
     levelUpScore    DWORD ?
     maxFruits       DWORD ?
-    diffEasy    BYTE "Easy", 0
-    diffNormal  BYTE "Normal", 0
-    diffHard    BYTE "Hard", 0
-    level           DWORD 1
+    diffEasy        BYTE "Easy", 0
+    diffNormal      BYTE "Normal", 0
+    diffHard        BYTE "Hard", 0
+    currentLevel    DWORD 1
+    fruitDropSpeed  DWORD 1
     ; Fruit/bomb array - each has 4 DWORDs: X, Y, active(1/0), type
     fruits          DWORD MAX_FRUITS * 4 dup(0)
-    yourScoreStr BYTE "Your score: ",0
 
-    
     ; Game symbols
     playerChar      BYTE "[===]", 0             ; Player basket
     fruitChars      BYTE "ABCDEFG@", 0          ; Fruit symbols + bomb (@)
@@ -71,25 +83,25 @@ MAX_LIVES       = 3       ; Maximum number of lives
     rulesMsg1 BYTE "Game Rules:", 13, 10, 0
     rulesMsg2 BYTE "1. Use A/D keys to move the basket left and right, please make sure your input method is set to English", 13, 10, 0
     rulesMsg3 BYTE "2. Catch the falling fruits (A-G)", 13, 10, 0
-    rulesMsg4 BYTE "3. Get 10 points for each caught fruit", 13, 10, 0
+    rulesMsg4 BYTE "3. Points: A/B=5, C/D=10, E/F=15, G=20", 13, 10, 0
     rulesMsg5 BYTE "4. Level difficulty increases at certain score thresholds", 13, 10, 0
     rulesMsg6 BYTE "5. Press P key to pause the game", 13, 10, 0
     rulesMsg7 BYTE "6. Press Q key to quit the game", 13, 10, 0
     rulesMsg8 BYTE "7. Avoid bombs (@) - catching one reduces lives (3 lives total)!", 13, 10, 0
+
     ; Music
-    SND_ASYNC    DWORD 00000001h   ; 非同步播放
-    SND_LOOP     DWORD 00000008h   ; 循環播放
-    SND_FILENAME DWORD 00020000h   ; 聲音是文件名
-    backgroundMusic BYTE "background.wav", 0  ; 音樂文件名
-    combinedFlags DWORD 00020009h  ;
+    SND_ASYNC    DWORD 00000001h   ; Asynchronous playback
+    SND_LOOP     DWORD 00000008h   ; Loop playback
+    SND_FILENAME DWORD 00020000h   ; Sound is a filename
+    backgroundMusic BYTE "background.wav", 0  ; Music filename
+    combinedFlags DWORD 00020009h   ; SND_FILENAME | SND_ASYNC | SND_LOOP
     chooseDiffMsg BYTE "Choose difficulty level:", 13,10,0
     diffOptionsMsg BYTE "1. Easy   2. Normal   3. Hard", 13,10,0
-    currentLevel    DWORD 1
-    fruitDropSpeed   DWORD 1
+
+; ============================================================================
+; Code Section
+; ============================================================================
 .code
-; ============================================================================
-; Main Program
-; ============================================================================
 main PROC
     call InitGame
     call ShowTitleScreen
@@ -116,45 +128,56 @@ main PROC
         mov eax, speed
         call Delay
         
-        ; 計算當前等級（基於分數），但不影響用戶選擇的difficulty
+        ; Calculate current level (based on score), but don't affect user-selected difficulty
         mov eax, score
         xor edx, edx
         mov ecx, LEVEL_UP_SCORE
         div ecx
         inc eax
-        ; 上限為MAX_LEVEL
+        ; Cap at MAX_LEVEL
         cmp eax, MAX_LEVEL
         jle @F
         mov eax, MAX_LEVEL
     @@:
-        mov currentLevel, eax    ; 存儲到新變數，而不是difficulty
+        mov currentLevel, eax
         
-        ; 基於初始難度和當前等級計算遊戲速度
-        mov eax, BASE_SPEED
-        mov ebx, currentLevel    ; 使用當前等級（不是difficulty）
-        shr eax, 1               ; 除以2（右移1位）
+        ; Calculate game speed based on initial difficulty and current level
+        mov eax, baseSpeed
+        mov ebx, currentLevel
+        shr eax, 1               ; Divide by 2
         cmp eax, MIN_SPEED 
         jge @F
         mov eax, MIN_SPEED
     @@:
         mov speed, eax
-        ; 遊戲結束條件
+        ; Game win condition
         cmp score, LEVEL_UP_SCORE * MAX_LEVEL
         jl ContinueGame
         mov gameRunning, 0
+        call Clrscr
+        mov eax, white
+        call SetTextColor
+        mov edx, OFFSET winMsg
         invoke PlaySound, NULL, 0, 0
+        call WriteString
+        call Crlf
+        mov edx, OFFSET yourScoreStr
+        call WriteString
+        mov eax, score
+        call WriteDec
+        call Crlf
+        call ReadChar
+        INVOKE ExitProcess, 0
 
     ContinueGame:
     .endw
     
     call Clrscr
-    mov edx, offset gameOverMsg
+    mov eax, white
+    call SetTextColor
+    mov edx, OFFSET gameOverMsg
     invoke PlaySound, NULL, 0, 0
     call WriteString
-    call Crlf
-    mov edx, OFFSET gameOverMsg
-    call WriteString
-    call Crlf
     call Crlf
     mov edx, OFFSET yourScoreStr
     call WriteString
@@ -162,12 +185,11 @@ main PROC
     call WriteDec
     call Crlf
     call ReadChar
-    
     INVOKE ExitProcess, 0
 main ENDP
 
 ; ============================================================================
-; Pause Message 
+; Pause Message
 ; ============================================================================
 DrawPauseMessage PROC
     push eax
@@ -176,10 +198,9 @@ DrawPauseMessage PROC
 
     ; Clear pause message area
     mov dl, 4
-
     mov dh, 10
     call Gotoxy
-    mov ecx, 20
+    mov ecx, 40
     mov al, ' '
 ClearLoop:
     call WriteChar
@@ -300,6 +321,10 @@ WaitForEnter:
     jne WaitForEnter
     ret
 ShowRulesScreen ENDP
+
+; =====================================================================
+; Select Difficulty
+; =====================================================================
 SelectDifficulty PROC
     call Clrscr
     mov eax, yellow
@@ -307,7 +332,6 @@ SelectDifficulty PROC
 
     mov edx, OFFSET chooseDiffMsg
     call WriteString
-    ; 顯示選項
     mov edx, OFFSET diffOptionsMsg
     call WriteString
 
@@ -324,60 +348,46 @@ WaitForChoice:
 SetEasy:
     mov eax, 1
     mov difficulty, eax
-
     mov eax, 600
     mov baseSpeed, eax
-
     mov eax, 50
     mov levelUpScore, eax
-
     mov eax, 5
     mov maxFruits, eax
-    
-    mov eax, 1            ; Easy難度掉落速度 - 每次更新移動1格
+    mov eax, 1            ; Easy difficulty drop speed - move 1 row per update
     mov fruitDropSpeed, eax
-
     jmp EndSelect
 
 SetNormal:
     mov eax, 2
     mov difficulty, eax
-
     mov eax, 400
     mov baseSpeed, eax
-
     mov eax, 30
     mov levelUpScore, eax
-
     mov eax, 5
     mov maxFruits, eax
-    
-    mov eax, 2            ; Normal難度掉落速度 - 每次更新移動2格
+    mov eax, 2            ; Normal difficulty drop speed - move 2 rows per update
     mov fruitDropSpeed, eax
-
     jmp EndSelect
 
 SetHard:
     mov eax, 3
     mov difficulty, eax
-
     mov eax, 150
     mov baseSpeed, eax
-
     mov eax, 30
     mov levelUpScore, eax
-
     mov eax, 4
     mov maxFruits, eax
-    
-    mov eax, 3            ; Hard難度掉落速度 - 每次更新移動3格
+    mov eax, 3            ; Hard difficulty drop speed - move 3 rows per update
     mov fruitDropSpeed, eax
-
     jmp EndSelect
 
 EndSelect:
     ret
 SelectDifficulty ENDP
+
 ; ============================================================================
 ; Process Input
 ; ============================================================================
@@ -386,29 +396,27 @@ ProcessInput PROC uses eax
     call ReadKey
     jz NoInput
 
-    and al, 11011111b      ; 將小寫轉換為大寫
+    and al, 11011111b      ; Convert to uppercase
 
-    ; --- Q key - Quit game ---
+    ; Q key - Quit game
     cmp al, 'Q'
     jne NotQKey
     mov gameRunning, 0
     jmp NoInput
 NotQKey:
 
-    ; --- P key - Pause/Resume toggle ---
+    ; P key - Pause/Resume toggle
     cmp al, 'P'
     jne NotPKey
-
     cmp gamePaused, 1
     je UnpauseGame
-
     mov gamePaused, 1
     call DrawPauseMessage
     jmp NoInput
 
 UnpauseGame:
-    mov gamePaused, 0      ; Clear pause flag
-    mov eax, yellow        ; Set yellow text
+    mov gamePaused, 0
+    mov eax, yellow
     call SetTextColor
     
     mov ecx, 3
@@ -418,13 +426,11 @@ CountdownLoop:
     call Gotoxy
     mov edx, OFFSET resumeMsg
     call WriteString
-   
-    mov dl, 27             ; X coordinate of X
-    mov dh, 10             ; Y coordinate of X
+    mov dl, 27
+    mov dh, 10
     call Gotoxy
     mov eax, ecx
     call WriteDec
-    
     mov eax, 1000
     call Delay
     loop CountdownLoop
@@ -432,34 +438,34 @@ CountdownLoop:
     mov dl, 4
     mov dh, 10
     call Gotoxy
-    mov ecx, 20  
+    mov ecx, 40
     mov al, ' '
 ClearLoop:
     call WriteChar
     loop ClearLoop
-    jmp NoInput  
+    jmp NoInput
 NotPKey:
 
-    ; 如果遊戲已暫停，則不處理移動按鍵
+    ; Skip movement keys if paused
     cmp gamePaused, 1
-    je NoInput 
+    je NoInput
 
-    ; --- A key - Move left ---
+    ; A key - Move left
     cmp al, 'A'
     jne NotAKeyMove
-    cmp playerPos, 1        ; Check left boundary
+    cmp playerPos, 1
     jle NotAKeyMove
-    dec playerPos           ; Move player position
+    dec playerPos
 NotAKeyMove:
 
-    ; --- D key - Move right ---
+    ; D key - Move right
     cmp al, 'D'
     jne NotDKeyMove
     mov eax, playerPos
-    add eax, 5             ; Basket width is 5 spaces
-    cmp eax, SCREEN_WIDTH  ; Check right boundary
+    add eax, 5
+    cmp eax, SCREEN_WIDTH
     jge NotDKeyMove
-    inc playerPos          ; Move player position
+    inc playerPos
 NotDKeyMove:
 
 NoInput:
@@ -472,12 +478,10 @@ ProcessInput ENDP
 UpdateGame PROC uses eax
     mov eax, 100
     call RandomRange
-
     cmp eax, 30            ; 20% chance to generate fruit
     jge @F
     call AddFruit
-    @@:
-    
+@@:
     call UpdateFruits
     call CheckCollisions
     ret
@@ -499,8 +503,8 @@ AddFruit PROC uses esi edi eax ebx ecx edx
     jge @F
     
     ; Find empty fruit position
-    xor esi, esi       ; 初始化 esi 為 0
-    mov ecx, MAX_FRUITS ; 使用常數 MAX_FRUITS 而不是變量 maxFruits
+    xor esi, esi
+    mov ecx, MAX_FRUITS
     .while esi < ecx
         mov eax, esi
         mov ecx, 16
@@ -515,17 +519,15 @@ AddFruit PROC uses esi edi eax ebx ecx edx
         call RandomRange
         inc eax
         mov [edi], eax
-
+        
         mov DWORD PTR [edi + 4], 1
         mov eax, difficulty
         add DWORD PTR [edi + 4], eax
-        
         mov DWORD PTR [edi + 8], 1
         
-
+        ; Randomly decide fruit or bomb based on difficulty
         mov eax, 100
         call RandomRange
-
         mov ecx, difficulty
         cmp ecx, 1
         je EasyBombChance
@@ -533,34 +535,35 @@ AddFruit PROC uses esi edi eax ebx ecx edx
         je NormalBombChance
         cmp ecx, 3
         je HardBombChance
-        jmp RegularFruit 
+        jmp RegularFruit
 
-        EasyBombChance:
-            cmp eax, 12
-            jl SetBomb
-            jmp RegularFruit
+EasyBombChance:
+        cmp eax, 12
+        jl SetBomb
+        jmp RegularFruit
 
-        NormalBombChance:
-            cmp eax, 25 
-            jl SetBomb
-            jmp RegularFruit
+NormalBombChance:
+        cmp eax, 25
+        jl SetBomb
+        jmp RegularFruit
 
-        HardBombChance:
-            cmp eax, 40
-            jl SetBomb
-            jmp RegularFruit
+HardBombChance:
+        cmp eax, 40
+        jl SetBomb
+        jmp RegularFruit
 
-        SetBomb:
-            mov DWORD PTR [edi + 12], BOMB_TYPE
-            jmp Done
+SetBomb:
+        mov DWORD PTR [edi + 12], BOMB_TYPE
+        jmp Done
 
-        RegularFruit:
-            mov eax, 7
-            call RandomRange
-            mov DWORD PTR [edi + 12], eax        
+RegularFruit:
+        mov eax, 7
+        call RandomRange
+        mov DWORD PTR [edi + 12], eax
+        
     NextFruit:
         inc esi
-        mov ecx, MAX_FRUITS   ; 重新加載計數器，因為前面被修改了
+        mov ecx, MAX_FRUITS
     .endw
     
 Done:
@@ -583,13 +586,13 @@ UpdateFruits PROC uses esi eax ecx ebx
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        ; 根據難度增加Y座標(掉落位置)
-        mov ebx, fruitDropSpeed   ; 使用難度相關的掉落速度
-        add DWORD PTR [eax + 4], ebx  ; 增加Y座標(掉落)
+        ; Update Y coordinate based on difficulty
+        mov ebx, fruitDropSpeed
+        add DWORD PTR [eax + 4], ebx
         
         cmp DWORD PTR [eax + 4], SCREEN_HEIGHT - 1
         jl NextFruit
-        mov DWORD PTR [eax + 8], 0  ; 如果超出螢幕，則移除水果
+        mov DWORD PTR [eax + 8], 0
         
     NextFruit:
         inc esi
@@ -615,24 +618,18 @@ CheckCollisions PROC uses esi eax ebx ecx edx
         mov ebx, [eax]      ; X
         mov ecx, [eax + 4]  ; Y
         
-        ; 檢查水果是否在籃子行或將在下一次移動後超過籃子行
+        ; Check if fruit is at basket row or will pass it
         cmp ecx, PLAYER_ROW
-        je CheckXCollision  ; 如果在籃子行，檢查X方向碰撞
-        
-        ; 檢查水果是否即將跳過籃子行
+        je CheckXCollision
         mov edx, PLAYER_ROW
-        sub edx, fruitDropSpeed  ; 計算水果可能的上一個位置
+        sub edx, fruitDropSpeed
         cmp ecx, edx
-        jl NextFruit  ; 如果水果在可能的上一個位置之上，跳過
-        
-        ; 水果會在下一次更新中跳過籃子行，檢查X方向碰撞
-        ; 首先計算水果下一次移動後的Y位置是否會超過籃子行
+        jl NextFruit
         mov edx, ecx
         add edx, fruitDropSpeed
         cmp edx, PLAYER_ROW
-        jle NextFruit  ; 如果不會超過，跳過
+        jle NextFruit
         
-        ; 水果會跳過籃子行，進行X方向碰撞檢測
 CheckXCollision:
         mov edx, playerPos
         cmp ebx, edx
@@ -645,9 +642,36 @@ CheckXCollision:
         cmp DWORD PTR [eax + 12], BOMB_TYPE
         je BombHit
         
-        ; Regular fruit collision
+        ; Regular fruit collision - assign score based on fruit type
         mov DWORD PTR [eax + 8], 0
+        mov ebx, [eax + 12]  ; Get fruit type
+        cmp ebx, 0           ; Fruit A
+        je AddScore5
+        cmp ebx, 1           ; Fruit B
+        je AddScore5
+        cmp ebx, 2           ; Fruit C
+        je AddScore10
+        cmp ebx, 3           ; Fruit D
+        je AddScore10
+        cmp ebx, 4           ; Fruit E
+        je AddScore15
+        cmp ebx, 5           ; Fruit F
+        je AddScore15
+        cmp ebx, 6           ; Fruit G
+        je AddScore20
+        jmp NextFruit
+
+AddScore5:
+        add score, 5
+        jmp NextFruit
+AddScore10:
         add score, 10
+        jmp NextFruit
+AddScore15:
+        add score, 15
+        jmp NextFruit
+AddScore20:
+        add score, 20
         jmp NextFruit
         
 BombHit:
@@ -657,13 +681,11 @@ BombHit:
         jg NextFruit
         mov gameRunning, 0
         call Clrscr
-        mov edx, offset gameOverMsg
+        mov eax, white
+        call SetTextColor
+        mov edx, OFFSET gameOverMsg
         invoke PlaySound, NULL, 0, 0
         call WriteString
-        call Crlf
-        mov edx, OFFSET gameOverMsg
-        call WriteString
-        call Crlf
         call Crlf
         mov edx, OFFSET yourScoreStr
         call WriteString
@@ -671,7 +693,7 @@ BombHit:
         call WriteDec
         call Crlf
         call ReadChar
-        invoke ExitProcess, 0
+        INVOKE ExitProcess, 0
         
     NextFruit:
         inc esi
@@ -687,8 +709,6 @@ DrawGame PROC uses eax
     call SetTextColor
     call DrawBorder
     
-    mov eax, yellow
-    call SetTextColor
     call DrawFruits
     
     mov eax, green
@@ -699,7 +719,7 @@ DrawGame PROC uses eax
     call SetTextColor
     call DisplayScore
     call DisplayLives
-    call DisplayDifficulty   ; 使用專門的函數顯示難度
+    call DisplayDifficulty
     ret
 DrawGame ENDP
 
@@ -747,7 +767,7 @@ DrawBorder PROC uses ecx edx
 DrawBorder ENDP
 
 ; ============================================================================
-; Draw Fruits/Bombs
+; Draw Fruits/Bombs with Colors
 ; ============================================================================
 DrawFruits PROC uses esi eax ebx ecx edx
     xor esi, esi
@@ -761,15 +781,65 @@ DrawFruits PROC uses esi eax ebx ecx edx
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        mov edx, [eax]              ; X123123123 1235
+        mov edx, [eax]              ; X
         mov ebx, [eax + 4]          ; Y
         mov ecx, [eax + 12]         ; Type
         mov dl, dl
         mov dh, bl
         call Gotoxy
         
+        ; Set color based on fruit/bomb type
+        push eax
+        mov eax, ecx
+        cmp eax, 0
+        je SetRed
+        cmp eax, 1
+        je SetGreen
+        cmp eax, 2
+        je SetBlue
+        cmp eax, 3
+        je SetYellow
+        cmp eax, 4
+        je SetMagenta
+        cmp eax, 5
+        je SetCyan
+        cmp eax, 6
+        je SetWhite
+        cmp eax, BOMB_TYPE
+        je SetLightRed
+        jmp DrawCharacter
+
+SetRed:
+        mov eax, red
+        jmp SetColor
+SetGreen:
+        mov eax, green
+        jmp SetColor
+SetBlue:
+        mov eax, blue
+        jmp SetColor
+SetYellow:
+        mov eax, yellow
+        jmp SetColor
+SetMagenta:
+        mov eax, magenta
+        jmp SetColor
+SetCyan:
+        mov eax, cyan
+        jmp SetColor
+SetWhite:
+        mov eax, white
+        jmp SetColor
+SetLightRed:
+        mov eax, lightRed
+SetColor:
+        call SetTextColor
+DrawCharacter:
         mov al, BYTE PTR [fruitChars + ecx]
         call WriteChar
+        mov eax, white
+        call SetTextColor
+        pop eax
         
     NextFruit:
         inc esi
@@ -815,7 +885,7 @@ DisplayScore ENDP
 ; Display Lives
 ; ============================================================================
 DisplayLives PROC uses eax edx
-    mov dl, 12                ; 稍微調整X座標，以便與難度顯示分開
+    mov dl, 12
     mov dh, SCREEN_HEIGHT + 1
     call Gotoxy
     
@@ -823,14 +893,12 @@ DisplayLives PROC uses eax edx
     call WriteString
     mov eax, lives
     call WriteDec
-    ; 移除這個call Crlf，避免換行
     ret
 DisplayLives ENDP
 
 ; ============================================================================
 ; Display Difficulty
 ; ============================================================================
-; 新增一個專門顯示難度的函數
 DisplayDifficulty PROC uses eax edx
     mov dl, 25
     mov dh, SCREEN_HEIGHT + 1
@@ -839,8 +907,7 @@ DisplayDifficulty PROC uses eax edx
     mov edx, OFFSET difficultyMsg
     call WriteString
 
-    ; 顯示用戶選擇的難度文字
-    mov eax, difficulty       ; 使用用戶選擇的difficulty
+    mov eax, difficulty
     cmp eax, 1
     je ShowEasy
     cmp eax, 2
@@ -866,4 +933,5 @@ ShowHard:
 EndShowDifficulty:
     ret
 DisplayDifficulty ENDP
+
 END main
