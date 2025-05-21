@@ -41,7 +41,7 @@ MIN_SPEED       = 50      ; Minimum game speed
     fruits          DWORD MAX_FRUITS * 4 dup(0)
     
     ; Game symbols
-    playerChar      BYTE "[===]", 0             ; Player basket
+    playerChar      BYTE "[===]", 0             ; Player basket hello hello
     fruitChars      BYTE "ABCDEFG", 0           ; Fruit symbols
 
     ; Title screen
@@ -440,7 +440,7 @@ AddFruit PROC uses esi edi eax ebx ecx edx
         ; Set fruit type
         mov eax, 7
         call RandomRange
-        mov DWORD PTR [edi + 12], eax  ; Fruit type
+        mov DWORD PTR [edi + 12], eax  ; Fruit type test
         jmp Done
         
     NextFruit:
@@ -618,7 +618,7 @@ DrawFruits PROC uses esi eax ebx ecx edx
         cmp DWORD PTR [eax + 8], 1    ; If fruit is active
         jne NextFruit
         
-        mov edx, [eax]              ; X123
+        mov edx, [eax]              ; X123123123
         mov ebx, [eax + 4]          ; Y
         mov ecx, [eax + 12]         ; Type
         
