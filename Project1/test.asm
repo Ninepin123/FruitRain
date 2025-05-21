@@ -1,10 +1,12 @@
 INCLUDE Irvine32.inc
+INCLUDELIB Winmm.lib
 
 .386    ;rebase
 .model flat,stdcall
 .stack 4096
-ExitProcess PROTO, dwExitCode:DWORD
 
+ExitProcess PROTO, dwExitCode:DWORD
+PlaySound PROTO, pszSound:PTR BYTE, hmod:DWORD, fdwSound:DWORD
 ; ============================================================================
 ; Constants Definition
 ; ============================================================================
@@ -33,7 +35,7 @@ MIN_SPEED       = 50      ; Minimum game speed
     gameOverMsg     BYTE "Game Over! Press any key to exit...", 13, 10, 0
     WinMsg          BYTE "You Win!", 0
     difficultyMsg   BYTE "Difficulty: ", 0
-    difficulty      DWORD   2       ; �w�]���׬� Normal
+    difficulty      DWORD   2       ; 預設難度為 Normal
     pressEnterMsg BYTE 13,10,"Press Enter key to start game...",13,10,0    
     baseSpeed       DWORD ?
     levelUpScore    DWORD ?
@@ -70,11 +72,14 @@ MIN_SPEED       = 50      ; Minimum game speed
     rulesMsg5 BYTE "4. Level difficulty increases at certain score thresholds", 13, 10, 0        ; Every 30 points jumps one level
     rulesMsg6 BYTE "5. Press P key to pause the game", 13, 10, 0
     rulesMsg7 BYTE "6. Press Q key to quit the game", 13, 10, 0
-
+    ; Music
+    SND_ASYNC    DWORD 00000001h   ; 非同步播放
+    SND_LOOP     DWORD 00000008h   ; 循環播放
+    SND_FILENAME DWORD 00020000h   ; 聲音是文件名
+    backgroundMusic BYTE "background.wav", 0  ; 音樂文件名
+    combinedFlags DWORD 00020009h  ;
     chooseDiffMsg BYTE "Choose difficulty level:", 13,10,0
     diffOptionsMsg BYTE "1. Easy   2. Normal   3. Hard", 13,10,0
-
-
 .code
 ; ============================================================================
 ; Main Program
@@ -85,7 +90,7 @@ main PROC
     call ShowTitleScreen
     call ShowRulesScreen
     call SelectDifficulty
-    
+    invoke PlaySound, OFFSET backgroundMusic, 0, combinedFlags
     ; Game main loop
     .while gameRunning == 1
         ; Process input
@@ -124,12 +129,14 @@ main PROC
         cmp score, LEVEL_UP_SCORE * MAX_LEVEL
         jl ContinueGame
         mov gameRunning, 0
+       invoke PlaySound, NULL, 0, 0
     ContinueGame:
     .endw
     
     ; Game over
     call Clrscr
     mov edx, offset WinMsg
+    invoke PlaySound, NULL, 0, 0
     call WriteString
     call Crlf
     mov edx, OFFSET gameOverMsg
@@ -227,11 +234,12 @@ ShowTitleScreen PROC
     call WriteString
 
     ; Display prompt message
+    invoke PlaySound, NULL, 0, 0
     mov eax, green
     call SetTextColor
     mov edx, OFFSET pressEnterMsg
     call WriteString
-
+    
     ; Wait for Enter key
 WaitForEnter:
     call ReadChar
@@ -289,7 +297,7 @@ SelectDifficulty PROC
 
     mov edx, OFFSET chooseDiffMsg
     call WriteString
-    ; ��ܿﶵ
+    ; 顯示選項
     mov edx, OFFSET diffOptionsMsg
     call WriteString
 
@@ -622,7 +630,7 @@ call Gotoxy
 mov edx, OFFSET difficultyMsg
 call WriteString
 
-; ������פ�r
+; 顯示難度文字
 mov eax, difficulty
 cmp eax, 1
 je ShowEasy
@@ -711,7 +719,7 @@ DrawFruits PROC uses esi eax ebx ecx edx
         cmp DWORD PTR [eax + 8], 1    ; If fruit is active
         jne NextFruit
         
-        mov edx, [eax]              ; X123123123
+        mov edx, [eax]              ; X123123123 1235
         mov ebx, [eax + 4]          ; Y
         mov ecx, [eax + 12]         ; Type
         
