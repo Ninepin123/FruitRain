@@ -131,18 +131,20 @@ main PROC
         cmp score, LEVEL_UP_SCORE * MAX_LEVEL
         jl ContinueGame
         mov gameRunning, 0
+       invoke PlaySound, NULL, 0, 0
     ContinueGame:
     .endw
     
     ; Game over
     call Clrscr
     mov edx, offset WinMsg
+    invoke PlaySound, NULL, 0, 0
     call WriteString
     call Crlf
     mov edx, OFFSET gameOverMsg
     call WriteString
     call ReadChar
-    invoke PlaySound, NULL, 0, 0
+    
     call ExitProcess
 main ENDP
 
@@ -234,11 +236,12 @@ ShowTitleScreen PROC
     call WriteString
 
     ; Display prompt message
+    invoke PlaySound, NULL, 0, 0
     mov eax, green
     call SetTextColor
     mov edx, OFFSET pressEnterMsg
     call WriteString
-
+    
     ; Wait for Enter key
 WaitForEnter:
     call ReadChar
