@@ -83,6 +83,7 @@ MAX_LIVES       = 3       ; Maximum number of lives
     combinedFlags DWORD 00020009h  ;
     chooseDiffMsg BYTE "Choose difficulty level:", 13,10,0
     diffOptionsMsg BYTE "1. Easy   2. Normal   3. Hard", 13,10,0
+    currentLevel    DWORD 1
 .code
 ; ============================================================================
 ; Main Program
@@ -113,31 +114,33 @@ main PROC
         mov eax, speed
         call Delay
         
+        ; 計算當前等級（基於分數），但不影響用戶選擇的difficulty
         mov eax, score
         xor edx, edx
         mov ecx, LEVEL_UP_SCORE
         div ecx
         inc eax
-        ; Cap difficulty at MAX_LEVEL for speed scaling
+        ; 上限為MAX_LEVEL
         cmp eax, MAX_LEVEL
         jle @F
         mov eax, MAX_LEVEL
     @@:
-        mov difficulty, eax
+        mov currentLevel, eax    ; 存儲到新變數，而不是difficulty
         
+        ; 基於初始難度和當前等級計算遊戲速度
         mov eax, BASE_SPEED
-        mov ebx, difficulty
-        shr eax, 1
+        mov ebx, currentLevel    ; 使用當前等級（不是difficulty）
+        shr eax, 1               ; 除以2（右移1位）
         cmp eax, MIN_SPEED 
         jge @F
         mov eax, MIN_SPEED
     @@:
         mov speed, eax
-        ; End condition
+        ; 遊戲結束條件
         cmp score, LEVEL_UP_SCORE * MAX_LEVEL
         jl ContinueGame
         mov gameRunning, 0
-       invoke PlaySound, NULL, 0, 0
+        invoke PlaySound, NULL, 0, 0
 
     ContinueGame:
     .endw
@@ -761,15 +764,15 @@ DisplayLives ENDP
 ; ============================================================================
 ; 新增一個專門顯示難度的函數
 DisplayDifficulty PROC uses eax edx
-    mov dl, 25               ; 設置X座標在生命值顯示的右側
+    mov dl, 25
     mov dh, SCREEN_HEIGHT + 1
     call Gotoxy
     
     mov edx, OFFSET difficultyMsg
     call WriteString
 
-    ; 顯示難度文字
-    mov eax, difficulty
+    ; 顯示用戶選擇的難度文字
+    mov eax, difficulty       ; 使用用戶選擇的difficulty
     cmp eax, 1
     je ShowEasy
     cmp eax, 2
