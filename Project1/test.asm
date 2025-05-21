@@ -12,7 +12,7 @@ SCREEN_WIDTH     = 40      ; Game screen width
 SCREEN_HEIGHT    = 20      ; Game screen height
 MAX_FRUITS       = 5       ; Maximum number of fruits/bombs
 PLAYER_ROW       = 18      ; Player basket row position
-MAX_LEVEL       = 5       ; Maximum level
+MAX_LEVEL       = 5       ; Maximum level for speed scaling
 LEVEL_UP_SCORE  = 30      ; Score needed per level
 BASE_SPEED      = 400     ; Base game speed (ms)
 MIN_SPEED       = 50      ; Minimum game speed
@@ -101,6 +101,7 @@ main PROC
         mov ecx, LEVEL_UP_SCORE
         div ecx
         inc eax
+        ; Cap difficulty at MAX_LEVEL for speed scaling
         cmp eax, MAX_LEVEL
         jle @F
         mov eax, MAX_LEVEL
@@ -116,16 +117,10 @@ main PROC
     @@:
         mov speed, eax
         
-        cmp score, LEVEL_UP_SCORE * MAX_LEVEL
-        jl ContinueGame
-        mov gameRunning, 0
     ContinueGame:
     .endw
     
     call Clrscr
-    mov edx, OFFSET WinMsg
-    call WriteString
-    call Crlf
     mov edx, OFFSET gameOverMsg
     call WriteString
     call ReadChar
@@ -520,7 +515,7 @@ DrawGame PROC uses eax
     call SetTextColor
     call DisplayScore
     call DisplayLives
-    mov dl, 20
+    mov dl, 25
     mov dh, SCREEN_HEIGHT + 1
     call Gotoxy
     mov edx, OFFSET difficultyMsg
@@ -643,7 +638,7 @@ DisplayScore ENDP
 ; Display Lives
 ; ============================================================================
 DisplayLives PROC uses eax edx
-    mov dl, 10
+    mov dl, 15
     mov dh, SCREEN_HEIGHT + 1
     call Gotoxy
     
