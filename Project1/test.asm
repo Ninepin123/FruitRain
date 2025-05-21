@@ -36,8 +36,7 @@ MAX_LIVES       = 3       ; Maximum number of lives
     resumeMsg       BYTE "Game will continue in  X seconds", 0  
     scoreMsg        BYTE "Score: ", 0
     livesMsg        BYTE "Lives: ", 0
-    gameOverMsg     BYTE "Game Over! Press any key to exit...", 13, 10, 0
-    WinMsg          BYTE "You Win!", 0
+    gameOverMsg     BYTE "Game Over! ", 13, 10, 0
     difficultyMsg   BYTE "Difficulty: ", 0
     difficulty      DWORD   2       ; 預設難度為 Normal
     pressEnterMsg BYTE 13,10,"Press Enter key to start game...",13,10,0    
@@ -50,6 +49,8 @@ MAX_LIVES       = 3       ; Maximum number of lives
     level           DWORD 1
     ; Fruit/bomb array - each has 4 DWORDs: X, Y, active(1/0), type
     fruits          DWORD MAX_FRUITS * 4 dup(0)
+    yourScoreStr BYTE "Your score: ",0
+
     
     ; Game symbols
     playerChar      BYTE "[===]", 0             ; Player basket
@@ -147,12 +148,19 @@ main PROC
     .endw
     
     call Clrscr
-    mov edx, offset WinMsg
+    mov edx, offset gameOverMsg
     invoke PlaySound, NULL, 0, 0
     call WriteString
     call Crlf
     mov edx, OFFSET gameOverMsg
     call WriteString
+    call Crlf
+    call Crlf
+    mov edx, OFFSET yourScoreStr
+    call WriteString
+    mov eax, score
+    call WriteDec
+    call Crlf
     call ReadChar
     
     INVOKE ExitProcess, 0
@@ -649,12 +657,21 @@ BombHit:
         jg NextFruit
         mov gameRunning, 0
         call Clrscr
-        mov eax, white
-        call SetTextColor
+        mov edx, offset gameOverMsg
+        invoke PlaySound, NULL, 0, 0
+        call WriteString
+        call Crlf
         mov edx, OFFSET gameOverMsg
         call WriteString
+        call Crlf
+        call Crlf
+        mov edx, OFFSET yourScoreStr
+        call WriteString
+        mov eax, score
+        call WriteDec
+        call Crlf
         call ReadChar
-        INVOKE ExitProcess, 0
+        invoke ExitProcess, 0
         
     NextFruit:
         inc esi
