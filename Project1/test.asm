@@ -365,28 +365,15 @@ ProcessInput PROC uses eax
     call ReadKey
     jz NoInput
 
-    and al, 11011111b
+    and al, 11011111b      ; 將小寫轉換為大寫
 
-    cmp al, 'A'
-    jne NotAKey
-    cmp playerPos, 1
-    jle NotAKey
-    dec playerPos
-NotAKey:
-
-    cmp al, 'D'
-    jne NotDKey
-    mov eax, playerPos
-    add eax, 5
-    cmp eax, SCREEN_WIDTH
-    jge NotDKey
-    inc playerPos
-NotDKey:
     ; --- Q key - Quit game ---
     cmp al, 'Q'
     jne NotQKey
     mov gameRunning, 0
+    jmp NoInput
 NotQKey:
+
     ; --- P key - Pause/Resume toggle ---
     cmp al, 'P'
     jne NotPKey
@@ -430,28 +417,29 @@ ClearLoop:
     call WriteChar
     loop ClearLoop
     jmp NoInput  
-
 NotPKey:
+
+    ; 如果遊戲已暫停，則不處理移動按鍵
     cmp gamePaused, 1
     je NoInput 
 
     ; --- A key - Move left ---
     cmp al, 'A'
-    jne NotAKey
+    jne NotAKeyMove
     cmp playerPos, 1        ; Check left boundary
-    jle NotAKey
+    jle NotAKeyMove
     dec playerPos           ; Move player position
-NotAKey:
+NotAKeyMove:
 
     ; --- D key - Move right ---
     cmp al, 'D'
-    jne NotDKey
+    jne NotDKeyMove
     mov eax, playerPos
     add eax, 5             ; Basket width is 5 spaces
     cmp eax, SCREEN_WIDTH  ; Check right boundary
-    jge NotDKey
+    jge NotDKeyMove
     inc playerPos          ; Move player position
-NotDKey:
+NotDKeyMove:
 
 NoInput:
     ret
@@ -490,7 +478,8 @@ AddFruit PROC uses esi edi eax ebx ecx edx
     jge @F
     
     ; Find empty fruit position
-    mov ecx, maxFruits
+    xor esi, esi       ; 初始化 esi 為 0
+    mov ecx, MAX_FRUITS ; 使用常數 MAX_FRUITS 而不是變量 maxFruits
     .while esi < ecx
         mov eax, esi
         mov ecx, 16
@@ -527,6 +516,7 @@ RegularFruit:
         
     NextFruit:
         inc esi
+        mov ecx, MAX_FRUITS   ; 重新加載計數器，因為前面被修改了
     .endw
     
 Done:
@@ -601,7 +591,6 @@ CheckCollisions PROC uses esi eax ebx ecx edx
 BombHit:
         mov DWORD PTR [eax + 8], 0
         dec lives
-        
         cmp lives, 0
         jg NextFruit
         mov gameRunning, 0
@@ -639,42 +628,7 @@ DrawGame PROC uses eax
     call SetTextColor
     call DisplayScore
     call DisplayLives
-    mov dl, 25
-    mov dh, SCREEN_HEIGHT + 1
-    call Gotoxy
-    mov edx, OFFSET difficultyMsg
-    ; Display level
-mov dl, 20
-mov dh, SCREEN_HEIGHT + 1
-call Gotoxy
-mov edx, OFFSET difficultyMsg
-call WriteString
-
-; 顯示難度文字
-mov eax, difficulty
-cmp eax, 1
-je ShowEasy
-cmp eax, 2
-je ShowNormal
-cmp eax, 3
-je ShowHard
-jmp EndShowDifficulty
-
-ShowEasy:
-    mov edx, OFFSET diffEasy
-    call WriteString
-    jmp EndShowDifficulty
-
-ShowNormal:
-    mov edx, OFFSET diffNormal
-    call WriteString
-    jmp EndShowDifficulty
-
-ShowHard:
-    mov edx, OFFSET diffHard
-    call WriteString
-
-EndShowDifficulty:
+    call DisplayDifficulty   ; 使用專門的函數顯示難度
     ret
 DrawGame ENDP
 
@@ -790,7 +744,7 @@ DisplayScore ENDP
 ; Display Lives
 ; ============================================================================
 DisplayLives PROC uses eax edx
-    mov dl, 15
+    mov dl, 12                ; 稍微調整X座標，以便與難度顯示分開
     mov dh, SCREEN_HEIGHT + 1
     call Gotoxy
     
@@ -798,8 +752,47 @@ DisplayLives PROC uses eax edx
     call WriteString
     mov eax, lives
     call WriteDec
-    call Crlf
+    ; 移除這個call Crlf，避免換行
     ret
 DisplayLives ENDP
 
+; ============================================================================
+; Display Difficulty
+; ============================================================================
+; 新增一個專門顯示難度的函數
+DisplayDifficulty PROC uses eax edx
+    mov dl, 25               ; 設置X座標在生命值顯示的右側
+    mov dh, SCREEN_HEIGHT + 1
+    call Gotoxy
+    
+    mov edx, OFFSET difficultyMsg
+    call WriteString
+
+    ; 顯示難度文字
+    mov eax, difficulty
+    cmp eax, 1
+    je ShowEasy
+    cmp eax, 2
+    je ShowNormal
+    cmp eax, 3
+    je ShowHard
+    jmp EndShowDifficulty
+
+ShowEasy:
+    mov edx, OFFSET diffEasy
+    call WriteString
+    jmp EndShowDifficulty
+
+ShowNormal:
+    mov edx, OFFSET diffNormal
+    call WriteString
+    jmp EndShowDifficulty
+
+ShowHard:
+    mov edx, OFFSET diffHard
+    call WriteString
+
+EndShowDifficulty:
+    ret
+DisplayDifficulty ENDP
 END main
