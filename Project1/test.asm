@@ -84,6 +84,7 @@ MAX_LIVES       = 3       ; Maximum number of lives
     chooseDiffMsg BYTE "Choose difficulty level:", 13,10,0
     diffOptionsMsg BYTE "1. Easy   2. Normal   3. Hard", 13,10,0
     currentLevel    DWORD 1
+    fruitDropSpeed   DWORD 1
 .code
 ; ============================================================================
 ; Main Program
@@ -324,6 +325,9 @@ SetEasy:
 
     mov eax, 5
     mov maxFruits, eax
+    
+    mov eax, 1            ; Easy難度掉落速度 - 每次更新移動1格
+    mov fruitDropSpeed, eax
 
     jmp EndSelect
 
@@ -339,6 +343,9 @@ SetNormal:
 
     mov eax, 5
     mov maxFruits, eax
+    
+    mov eax, 2            ; Normal難度掉落速度 - 每次更新移動2格
+    mov fruitDropSpeed, eax
 
     jmp EndSelect
 
@@ -354,6 +361,9 @@ SetHard:
 
     mov eax, 4
     mov maxFruits, eax
+    
+    mov eax, 3            ; Hard難度掉落速度 - 每次更新移動3格
+    mov fruitDropSpeed, eax
 
     jmp EndSelect
 
@@ -530,7 +540,7 @@ AddFruit ENDP
 ; ============================================================================
 ; Update Fruit Positions
 ; ============================================================================
-UpdateFruits PROC uses esi eax ecx
+UpdateFruits PROC uses esi eax ecx ebx
     xor esi, esi
     
     .while esi < MAX_FRUITS
@@ -542,11 +552,13 @@ UpdateFruits PROC uses esi eax ecx
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        inc DWORD PTR [eax + 4]
+        ; 根據難度增加Y座標(掉落位置)
+        mov ebx, fruitDropSpeed   ; 使用難度相關的掉落速度
+        add DWORD PTR [eax + 4], ebx  ; 增加Y座標(掉落)
         
         cmp DWORD PTR [eax + 4], SCREEN_HEIGHT - 1
         jl NextFruit
-        mov DWORD PTR [eax + 8], 0
+        mov DWORD PTR [eax + 8], 0  ; 如果超出螢幕，則移除水果
         
     NextFruit:
         inc esi
