@@ -48,7 +48,7 @@ MIN_SPEED        = 50      ; Minimum game speed
     pressEnterMsg   BYTE 13,10,"Press Enter to start the game...",13,10,0    
     
     ; Game symbols
-    playerChar      BYTE "[===]", 0             ; Player basket
+    playerChar      BYTE "[===]", 0             ; Player basket hello hello
     fruitChars      BYTE "ABCDEFG", 0           ; Fruit symbols
 
     ; Title screen
