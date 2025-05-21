@@ -1,17 +1,20 @@
-; 接水果遊戲 - Irvine32 版本
-; 使用鍵盤左右鍵控制籃子接掉落的水果 12344
 INCLUDE Irvine32.inc
+
+.386
+.model flat,stdcall
+.stack 4096
+ExitProcess PROTO, dwExitCode:DWORD
 
 ; ============================================================================
 ; 常數定義
 ; ============================================================================
-SCREEN_WIDTH     = 40      ; 遊戲畫面寬度     測abcd
+SCREEN_WIDTH     = 40      ; 遊戲畫面寬度
 SCREEN_HEIGHT    = 20      ; 遊戲畫面高度
 MAX_FRUITS       = 5       ; 最多水果數量
 PLAYER_ROW       = 18      ; 玩家籃子的行位置
 MAX_LEVEL       = 5       ; 最大關卡數
 LEVEL_UP_SCORE  = 30      ; 每關所需分數
-BASE_SPEED      = 200     ; 基礎遊戲速度(ms)
+BASE_SPEED      = 400     ; 基礎遊戲速度(ms)      ;數字越大越簡單
 MIN_SPEED       = 50      ; 最小遊戲速度
 
 ; ============================================================================
@@ -19,43 +22,29 @@ MIN_SPEED       = 50      ; 最小遊戲速度
 ; ============================================================================
 .data
     ; 遊戲變數
-    playerPos       DWORD 20             ; 玩家位置(列) 測試123123123
-    score           DWORD 0              ; 分數
-    gameRunning     DWORD 1              ; 遊戲狀態456
-    speed           DWORD 200            ; 遊戲速度(ms)
-    
-    ; 水果陣列 - 每個水果 4 個 DWORD: X, Y, active(1/0), type
-    fruits          DWORD MAX_FRUITS * 4 dup(0)
-    
-    ; 字串資料
-    titleMsg        BYTE "接水果遊戲", 13, 10, 0
-    instructMsg     BYTE "使用 A/D 鍵移動籃子，Q 鍵退出", 13, 10, 0
+    playerPos       DWORD ?                                         ; 玩家位置(列) 
+    score           DWORD ?                                         ; 分數
+    gameRunning     DWORD 1                                         ; 遊戲狀態，=1進行，=0停止
+    speed           DWORD 400                                       ; 遊戲速度(ms)
+    gamePaused      DWORD 0                                         ; 暫停狀態
+    pauseMsg        BYTE "遊戲暫停，按P繼續遊戲", 0
+    resumeMsg       BYTE "遊戲將在 X 秒後繼續", 0  
     scoreMsg        BYTE "分數: ", 0
     gameOverMsg     BYTE "遊戲結束! 按任意鍵退出...", 13, 10, 0
     WinMsg          BYTE "你贏了！", 0
+    difficultyMsg   BYTE "目前難度: ", 0
+    difficulty      DWORD 1                                         ; 當前難度
+    pressEnterMsg BYTE 13,10,"點擊 Enter 鍵開始遊戲...",13,10,0    
+
+
+    ; 水果陣列 - 每個水果 4 個 DWORD: X, Y, active(1/0), type
+    fruits          DWORD MAX_FRUITS * 4 dup(0)
     
     ; 遊戲符號
-    playerChar      BYTE "[===]", 0        ; 玩家籃子
-    fruitChars      BYTE "ABCDEFG", 0      ; 水果符號
-    borderChar      BYTE "-|+", 0          ; 邊框符號
+    playerChar      BYTE "[===]", 0             ; 玩家籃子
+    fruitChars      BYTE "ABCDEFG", 0           ; 水果符號
 
-    difficulty      DWORD 1              ; 難度等級 (1-簡單, 2-普通, 3-困難)
-    difficultyMsg   BYTE "選擇難度 (1-簡單, 2-普通, 3-困難): ", 0
-    difficultyNames BYTE "簡單", 0
-                    BYTE "普通", 0
-                    BYTE "困難", 0
-    currentDiffMsg  BYTE "當前難度: ", 0
-    invalidInputMsg BYTE "無效輸入，請選擇1-3", 0
-    ;封面1
-    ;titleArt1 BYTE 13,10"  ________ ________  ___  ___  ___  _________     ________  ________  ___  ________  ",13,10,0
-    ;titleArt2 BYTE      " |\  _____\\   __  \|\  \|\  \|\  \|\___   ___\  |\   __  \|\   __  \|\  \|\   ___  \ ",13,10,0
-    ;titleArt3 BYTE      " \ \  \__/\ \  \|\  \ \  \\\  \ \  \|___ \  \_|  \ \  \|\  \ \  \|\  \ \  \ \  \\ \  \  ",13,10,0
-    ;titleArt4 BYTE      "  \ \   __\\ \   _  _\ \  \\\  \ \  \   \ \  \    \ \   _  _\ \   __  \ \  \ \  \\ \  \  ",13,10,0
-    ;titleArt5 BYTE      "   \ \  \_| \ \  \\  \\ \  \\\  \ \  \   \ \  \    \ \  \\  \\ \  \ \  \ \  \ \  \\ \  \ ",13,10,0
-    ;titleArt6 BYTE      "    \ \__\   \ \__\\ _\\ \_______\ \__\   \ \__\    \ \__\\ _\\ \__\ \__\ \__\ \__\\ \__\",13,10,0
-    ;titleArt7 BYTE      "     \|__|    \|__|\|__|\|_______|\|__|    \|__|     \|__|\|__|\|__|\|__|\|__|\|__| \|__|",13,10,0
-
-    ;封面2
+    ;封面
     titleArt1 BYTE 13,10,"  ________  _______   __    __  ______  ________        _______    ______   ______  __    __ ",13,10,0
     titleArt2 BYTE       " |        \|       \ |  \  |  \|      \|        \      |       \  /      \ |      \|  \  |  \",13,10,0
     titleArt3 BYTE       " | $$$$$$$$| $$$$$$$\| $$  | $$ \$$$$$$ \$$$$$$$$      | $$$$$$$\|  $$$$$$\ \$$$$$$| $$\ | $$",13,10,0
@@ -66,31 +55,47 @@ MIN_SPEED       = 50      ; 最小遊戲速度
     titleArt8 BYTE       " | $$      | $$  | $$ \$$    $$|   $$ \   | $$         | $$  | $$| $$  | $$|   $$ \| $$  \$$$",13,10,0
     titleArt9 BYTE       "  \$$       \$$   \$$  \$$$$$$  \$$$$$$    \$$          \$$   \$$ \$$   \$$ \$$$$$$ \$$   \$$",13,10,0
 
+    ;遊戲規則
+    rulesMsg1 BYTE "遊戲規則:", 13, 10, 0
+    rulesMsg2 BYTE "1. 使用 A/D 鍵左右移動籃子，請先確認輸入法轉為英文", 13, 10, 0
+    rulesMsg3 BYTE "2. 接住從天而降的水果(A-G)", 13, 10, 0
+    rulesMsg4 BYTE "3. 每接住一個水果得10分", 13, 10, 0
+    rulesMsg5 BYTE "4. 達到一定分數關卡難度會提升", 13, 10, 0                    ;每30分跳一級
+    rulesMsg6 BYTE "5. 按 P 鍵可暫停遊戲", 13, 10, 0
+    rulesMsg7 BYTE "6. 按 Q 鍵可退出遊戲", 13, 10, 0
 
-    pressEnterMsg BYTE 13,10,"按 Enter 鍵開始遊戲...",13,10,0
-    
 .code
 ; ============================================================================
 ; 主程式
+; 會先初始化遊戲->顯示封面->顯示規則->進入遊戲->遊戲結束
 ; ============================================================================
 main PROC
     call InitGame
     call ShowTitleScreen
-
-    ; 顯示遊戲說明
-    mov edx, OFFSET titleMsg
-    call WriteString
-    mov edx, OFFSET instructMsg
-    call WriteString
-    call WaitMsg
+    call ShowRulesScreen
     
     ; 遊戲主循環
     .while gameRunning == 1
-        call ClearScreen
+        ;處理輸入
         call ProcessInput
+        
+        ; 檢查暫停狀態
+        cmp gamePaused, 1
+        je PausedState
+        
+        ; 正常遊戲狀態的處理
+        call Clrscr
         call UpdateGame
         call DrawGame
-        mov eax, speed          ; 使用動態速度
+        jmp ContinueGameLoop
+    
+    PausedState:
+        ; 暫停狀態只繪製畫面
+        call DrawGame
+        call DrawPauseMessage
+        
+    ContinueGameLoop:
+        mov eax, speed
         call Delay
         
         ; 檢查是否升級
@@ -98,26 +103,24 @@ main PROC
         xor edx, edx
         mov ecx, LEVEL_UP_SCORE
         div ecx
-        inc eax                 ; 計算當前應屬關卡
-        
-        ; 確保不超過最大關卡
+        inc eax
         cmp eax, MAX_LEVEL
         jle @F
         mov eax, MAX_LEVEL
     @@:
         mov difficulty, eax
         
-        ; 更新遊戲速度 (隨關卡加快)
+        ; 更新遊戲速度
         mov eax, BASE_SPEED
         mov ebx, difficulty
-        shr eax, 1              ; 每關速度減半
+        shr eax, 1
         cmp eax, MIN_SPEED
         jge @F
-        mov eax, MIN_SPEED      ; 不要低於最小速度
+        mov eax, MIN_SPEED
     @@:
         mov speed, eax
         
-        ; 勝利條件 (通過所有關卡)
+        ; 結束條件
         cmp score, LEVEL_UP_SCORE * MAX_LEVEL
         jl ContinueGame
         mov gameRunning, 0
@@ -125,7 +128,7 @@ main PROC
     .endw
     
     ; 遊戲結束
-    call ClearScreen
+    call Clrscr
     mov edx, offset WinMsg
     call WriteString
     call Crlf
@@ -135,6 +138,41 @@ main PROC
     
     call ExitProcess
 main ENDP
+
+; ============================================================================
+; 暫停訊息 
+; ============================================================================
+DrawPauseMessage PROC
+    push eax
+    push edx
+    push ecx
+
+    ; 清除暫停訊息區域
+    mov dl, 10
+    mov dh, 10
+    call Gotoxy
+    mov ecx, 16
+    mov al, ' '
+ClearLoop:
+    call WriteChar
+    inc dl
+    loop ClearLoop
+
+    ; 顯示暫停訊息
+    mov eax, yellow
+    call SetTextColor
+    mov dl, 10
+    mov dh, 10
+    call Gotoxy
+    mov edx, OFFSET pauseMsg
+    call WriteString
+
+    ; 恢復暫存器
+    pop ecx
+    pop edx
+    pop eax
+    ret
+DrawPauseMessage ENDP
 
 ; ============================================================================
 ; 初始化遊戲
@@ -163,9 +201,9 @@ InitGame ENDP
 ; 顯示遊戲封面
 ; =====================================================================
 ShowTitleScreen PROC
-    call ClearScreen
+    call Clrscr
     
-    ; 顯示遊戲標題 ASCII 藝術字
+    ; 顯示遊戲標題
     mov eax, cyan
     call SetTextColor
 
@@ -189,7 +227,7 @@ ShowTitleScreen PROC
     call WriteString
 
     ; 顯示提示訊息
-    mov eax, yellow
+    mov eax, green
     call SetTextColor
     mov edx, OFFSET pressEnterMsg
     call WriteString
@@ -202,45 +240,139 @@ WaitForEnter:
     ret
 ShowTitleScreen ENDP
 
+; =====================================================================
+; 顯示規則畫面
+; =====================================================================
+ShowRulesScreen PROC
+    call Clrscr
+    
+    ; 顯示規則標題
+    mov eax, yellow
+    call SetTextColor
+    mov edx, OFFSET rulesMsg1
+    call WriteString
+    call Crlf
+    
+    ; 顯示規則
+    mov eax, white
+    call SetTextColor
+    mov edx, OFFSET rulesMsg2
+    call WriteString
+    mov edx, OFFSET rulesMsg3
+    call WriteString
+    mov edx, OFFSET rulesMsg4
+    call WriteString
+    mov edx, OFFSET rulesMsg5
+    call WriteString
+    mov edx, OFFSET rulesMsg6
+    call WriteString
+    mov edx, OFFSET rulesMsg7
+    call WriteString
+    
+    ; 顯示繼續提示
+    mov eax, green
+    call SetTextColor
+    mov edx, OFFSET pressEnterMsg
+    call WriteString
+    
+    ; 等待 Enter 鍵
+WaitForEnter:
+    call ReadChar
+    cmp al, 13          ; Enter 鍵 ASCII = 13
+    jne WaitForEnter
+    ret
+ShowRulesScreen ENDP
 ; ============================================================================
 ; 處理輸入
 ; ============================================================================
 ProcessInput PROC uses eax
-    mov eax, 10            ; 10ms timeout
-    call ReadKey           ; 非阻塞讀取
-    jz NoInput             ; 沒有按鍵
-    
-    ; 轉為大寫
-    and al, 11011111b      ; 將小寫轉為大寫
-    
-    ; A 鍵 - 向左移動
+    mov eax, 10            ; 10ms 超時設定
+    call ReadKey           ; 非阻塞讀取按鍵
+    jz NoInput             ; 沒有按鍵則直接返回
+
+    ; 轉為大寫統一處理
+    and al, 11011111b      ; 轉換小寫為大寫 (清除第5位)
+
+    ; --- 所有遊戲狀態都處理的按鍵 ---
+    ; A鍵 - 向左移動
     cmp al, 'A'
-    jne @F
-    cmp playerPos, 1
-    jle @F
-    dec playerPos
-    @@:
-    
-    ; D 鍵 - 向右移動
+    jne NotAKey
+    cmp playerPos, 1        ; 檢查左邊界
+    jle NotAKey
+    dec playerPos           ; 移動玩家位置
+NotAKey:
+
+    ; D鍵 - 向右移動
     cmp al, 'D'
-    jne @F
+    jne NotDKey
     mov eax, playerPos
-    add eax, 6
-    cmp eax, SCREEN_WIDTH
-    jge @F
-    inc playerPos
-    @@:
-    
-    ; Q 鍵 - 退出遊戲
+    add eax, 5             ; 籃子寬度為5格
+    cmp eax, SCREEN_WIDTH  ; 檢查右邊界
+    jge NotDKey
+    inc playerPos          ; 移動玩家位置
+NotDKey:
+
+    ; Q鍵 - 退出遊戲
     cmp al, 'Q'
-    jne NoInput
-    mov gameRunning, 0
+    jne NotQKey
+    mov gameRunning, 0     ; 遊戲結束
+NotQKey:
+
+    ; --- 暫停/繼續專用處理 ---
+    cmp al, 'P'
+    jne NoInput            ; 不是P鍵則結束處理
+
+    ; 根據當前狀態切換
+    cmp gamePaused, 1
+    je  UnpauseGame        ; 當前狀態是已暫停，取消暫停
+
+    ; 執行暫停邏輯
+    mov gamePaused, 1      ; 設置暫停標誌
+    call DrawPauseMessage  ; 繪製暫停訊息
+    jmp NoInput
+
+UnpauseGame:
+    ; 執行取消暫停邏輯
+    mov gamePaused, 0      ; 清除暫停標誌
     
+    ; 顯示倒計時 (3秒)
+    mov eax, yellow        ; 設置黃色文字
+    call SetTextColor
+    
+    mov ecx, 3             ; 倒數3秒
+CountdownLoop:
+    ; 先清除舊訊息
+    mov dl, 10
+    mov dh, 10
+    call Gotoxy
+    mov edx, OFFSET resumeMsg
+    call WriteString       ; "遊戲將在 X 秒後恢復..."
+    
+    ; 動態更新數字位置 (覆蓋X)
+    mov dl, 19             ; X的X座標
+    mov dh, 10             ; X的Y座標
+    call Gotoxy
+    mov eax, ecx
+    call WriteDec          ; 顯示當前倒數數字
+    
+    mov eax, 1000          ; 延遲1秒
+    call Delay
+    loop CountdownLoop
+    
+    ; 清除倒數訊息
+    mov dl, 10
+    mov dh, 10
+    call Gotoxy
+    mov ecx, 16  
+    mov al, ' '
+ClearLoop:
+    call WriteChar
+    loop ClearLoop
+
 NoInput:
     ret
 ProcessInput ENDP
-
-; ============================================================================
+;============================================================================
 ; 更新遊戲邏輯
 ; ============================================================================
 UpdateGame PROC uses eax
@@ -262,6 +394,7 @@ UpdateGame ENDP
 
 ; ============================================================================
 ; 添加新水果
+; 這邊算法要再看一下，RandomRange沒用到
 ; ============================================================================
 AddFruit PROC uses esi edi eax ebx ecx edx
     ; 計算生成機率 (使用difficulty而不是level)
@@ -414,8 +547,6 @@ DrawGame PROC uses eax
     call SetTextColor
     call DisplayScore
     ; 顯示關卡
-    mov eax, white
-    call SetTextColor
     mov dl, 20
     mov dh, SCREEN_HEIGHT + 1
     call Gotoxy
@@ -430,7 +561,7 @@ DrawGame ENDP
 ; 繪製邊框
 ; ============================================================================
 DrawBorder PROC uses ecx edx
-    ; 上邊框
+    ; 邊框
     mov dl, 0            ; Column
     mov dh, 0            ; Row
     call Gotoxy
@@ -542,13 +673,5 @@ DisplayScore PROC uses eax edx
     call Crlf
     ret
 DisplayScore ENDP
-
-; ============================================================================
-; 清除螢幕
-; ============================================================================
-ClearScreen PROC
-    call Clrscr
-    ret
-ClearScreen ENDP
 
 END main
