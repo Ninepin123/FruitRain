@@ -15,7 +15,7 @@ PLAYER_ROW       = 18      ; Player basket row position
 MAX_LEVEL        = 5       ; Maximum level
 LEVEL_UP_SCORE   = 30      ; Score needed for each level
 BASE_SPEED       = 400     ; Base game speed (ms)      ; Higher number means easier
-MIN_SPEED        = 50      ; Minimum game speed
+MIN_SPEED        = 50      ; Minimum game speed        lazybird testing
 
 ; ============================================================================
 ; Data section
