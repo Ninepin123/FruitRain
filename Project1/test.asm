@@ -10,7 +10,7 @@ ExitProcess PROTO, dwExitCode:DWORD
 ; ============================================================================
 SCREEN_WIDTH     = 40      ; Game screen width
 SCREEN_HEIGHT    = 20      ; Game screen height
-MAX_FRUITS       = 5       ; Maximum number of fruits 123
+MAX_FRUITS       = 5       ; Maximum number of fruits 789
 PLAYER_ROW       = 18      ; Player basket row position
 MAX_LEVEL        = 5       ; Maximum level
 LEVEL_UP_SCORE   = 30      ; Score needed for each level
