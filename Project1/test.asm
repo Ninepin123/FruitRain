@@ -507,26 +507,49 @@ AddFruit PROC uses esi edi eax ebx ecx edx
         call RandomRange
         inc eax
         mov [edi], eax
-        
+
         mov DWORD PTR [edi + 4], 1
         mov eax, difficulty
         add DWORD PTR [edi + 4], eax
         
         mov DWORD PTR [edi + 8], 1
         
-        ; Randomly decide fruit or bomb (10% chance for bomb)
+
         mov eax, 100
         call RandomRange
-        cmp eax, 40
-        jge RegularFruit
-        mov DWORD PTR [edi + 12], BOMB_TYPE  ; Set as bomb
-        jmp Done
-RegularFruit:
-        mov eax, 7
-        call RandomRange
-        mov DWORD PTR [edi + 12], eax
-        jmp Done
-        
+
+        mov ecx, difficulty
+        cmp ecx, 1
+        je EasyBombChance
+        cmp ecx, 2
+        je NormalBombChance
+        cmp ecx, 3
+        je HardBombChance
+        jmp RegularFruit 
+
+        EasyBombChance:
+            cmp eax, 12
+            jl SetBomb
+            jmp RegularFruit
+
+        NormalBombChance:
+            cmp eax, 25 
+            jl SetBomb
+            jmp RegularFruit
+
+        HardBombChance:
+            cmp eax, 40
+            jl SetBomb
+            jmp RegularFruit
+
+        SetBomb:
+            mov DWORD PTR [edi + 12], BOMB_TYPE
+            jmp Done
+
+        RegularFruit:
+            mov eax, 7
+            call RandomRange
+            mov DWORD PTR [edi + 12], eax        
     NextFruit:
         inc esi
         mov ecx, MAX_FRUITS   ; 重新加載計數器，因為前面被修改了
