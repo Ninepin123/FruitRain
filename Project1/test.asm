@@ -10,7 +10,7 @@ ExitProcess PROTO, dwExitCode:DWORD
 ; ============================================================================
 SCREEN_WIDTH     = 40      ; Game screen width
 SCREEN_HEIGHT    = 20      ; Game screen height
-MAX_FRUITS       = 5       ; Maximum number of fruits
+MAX_FRUITS       = 5       ; Maximum number of fruits 123
 PLAYER_ROW       = 18      ; Player basket row position
 MAX_LEVEL        = 5       ; Maximum level
 LEVEL_UP_SCORE   = 30      ; Score needed for each level
@@ -693,7 +693,7 @@ DrawPlayer ENDP
 ; ============================================================================
 ; Display score
 ; ============================================================================
-DisplayScore PROC uses eax edx
+DisplayScore PROC uses eax edx;
     mov dl, 0
     mov dh, SCREEN_HEIGHT + 1
     call Gotoxy
