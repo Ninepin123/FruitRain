@@ -440,7 +440,7 @@ AddFruit PROC uses esi edi eax ebx ecx edx
         ; Set fruit type
         mov eax, 7
         call RandomRange
-        mov DWORD PTR [edi + 12], eax  ; Fruit type
+        mov DWORD PTR [edi + 12], eax  ; Fruit type test
         jmp Done
         
     NextFruit:
