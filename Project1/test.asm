@@ -1,6 +1,6 @@
 INCLUDE Irvine32.inc
 
-.386
+.386    ;rebase
 .model flat,stdcall
 .stack 4096
 ExitProcess PROTO, dwExitCode:DWORD
