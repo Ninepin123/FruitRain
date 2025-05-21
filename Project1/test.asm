@@ -1,51 +1,44 @@
 INCLUDE Irvine32.inc
 
-.386        ;pr
+.386
 .model flat,stdcall
 .stack 4096
 ExitProcess PROTO, dwExitCode:DWORD
 
 ; ============================================================================
-; Constants definition
+; Constants Definition
 ; ============================================================================
 SCREEN_WIDTH     = 40      ; Game screen width
 SCREEN_HEIGHT    = 20      ; Game screen height
-MAX_FRUITS       = 5       ; Maximum number of fruits 789
+MAX_FRUITS       = 5       ; Maximum number of fruits
 PLAYER_ROW       = 18      ; Player basket row position
-MAX_LEVEL        = 5       ; Maximum level
-LEVEL_UP_SCORE   = 30      ; Score needed for each level
-BASE_SPEED       = 400     ; Base game speed (ms)      ; Higher number means easier
-MIN_SPEED        = 50      ; Minimum game speed        lazybird testing
+MAX_LEVEL       = 5       ; Maximum level
+LEVEL_UP_SCORE  = 30      ; Score needed per level
+BASE_SPEED      = 400     ; Base game speed (ms)      ; Higher number = easier
+MIN_SPEED       = 50      ; Minimum game speed
 
 ; ============================================================================
-; Data section
+; Data Section
 ; ============================================================================
 .data
     ; Game variables
-    playerPos       DWORD 20                                        ; Player position (column)
-    score           DWORD 0                                         ; Score
+    playerPos       DWORD ?                                         ; Player position (column) 
+    score           DWORD ?                                         ; Score
     gameRunning     DWORD 1                                         ; Game state, =1 running, =0 stopped
     speed           DWORD 400                                       ; Game speed (ms)
     gamePaused      DWORD 0                                         ; Pause state
-    pauseMsg        BYTE "Game Paused, Press P to continue", 0
-    pauseDrawEnabled BYTE 1                                         ; Default 1 (drawing enabled), 0 for disabled
-    pauseDrawMsg    BYTE "Draw game while paused (Press T to toggle): ", 0
-    enabledStr      BYTE "Enabled", 0
-    disabledStr     BYTE "Disabled", 0
-    resumeMsg       BYTE "Game will resume in X seconds", 0
-    
-    ; Fruit array - Each fruit has 4 DWORDs: X, Y, active(1/0), type
-    fruits          DWORD MAX_FRUITS * 4 dup(0)
-    
-    ; String data
-    titleMsg        BYTE "Fruit Catching Game", 13, 10, 0
-    instructMsg     BYTE "Use A/D keys to move basket, Q to quit", 13, 10, 0
+    pauseMsg        BYTE "Game paused, press P to continue", 0
+    resumeMsg       BYTE "Game will continue in X seconds", 0  
     scoreMsg        BYTE "Score: ", 0
     gameOverMsg     BYTE "Game Over! Press any key to exit...", 13, 10, 0
     WinMsg          BYTE "You Win!", 0
-    difficultyMsg   BYTE "Current Level: ", 0
+    difficultyMsg   BYTE "Current difficulty: ", 0
     difficulty      DWORD 1                                         ; Current difficulty
-    pressEnterMsg   BYTE 13,10,"Press Enter to start the game...",13,10,0    
+    pressEnterMsg BYTE 13,10,"Press Enter key to start game...",13,10,0    
+
+
+    ; Fruit array - each fruit has 4 DWORDs: X, Y, active(1/0), type
+    fruits          DWORD MAX_FRUITS * 4 dup(0)
     
     ; Game symbols
     playerChar      BYTE "[===]", 0             ; Player basket
@@ -64,26 +57,26 @@ MIN_SPEED        = 50      ; Minimum game speed        lazybird testing
 
     ; Game rules
     rulesMsg1 BYTE "Game Rules:", 13, 10, 0
-    rulesMsg2 BYTE "1. Use A/D keys to move basket left/right (make sure your input is in English)", 13, 10, 0
-    rulesMsg3 BYTE "2. Catch falling fruits (A-G)", 13, 10, 0
-    rulesMsg4 BYTE "3. Each fruit caught is worth 10 points", 13, 10, 0
-    rulesMsg5 BYTE "4. Difficulty increases at certain score thresholds", 13, 10, 0       ; Every 30 points
-    rulesMsg6 BYTE "5. Press P to pause the game", 13, 10, 0
-    rulesMsg7 BYTE "6. Press Q to quit the game", 13, 10, 0
+    rulesMsg2 BYTE "1. Use A/D keys to move the basket left and right, please make sure your input method is set to English", 13, 10, 0
+    rulesMsg3 BYTE "2. Catch the falling fruits (A-G)", 13, 10, 0
+    rulesMsg4 BYTE "3. Get 10 points for each caught fruit", 13, 10, 0
+    rulesMsg5 BYTE "4. Level difficulty increases at certain score thresholds", 13, 10, 0        ; Every 30 points jumps one level
+    rulesMsg6 BYTE "5. Press P key to pause the game", 13, 10, 0
+    rulesMsg7 BYTE "6. Press Q key to quit the game", 13, 10, 0
 
 .code
 ; ============================================================================
-; Main procedure
-; Initializes game -> Shows title -> Shows rules -> Game loop -> Game over
+; Main Program
+; Will initialize game -> show title screen -> show rules -> enter game -> game over
 ; ============================================================================
 main PROC
     call InitGame
     call ShowTitleScreen
     call ShowRulesScreen
     
-   ; Game main loop
+    ; Game main loop
     .while gameRunning == 1
-        call Clrscr
+        ; Process input
         call ProcessInput
         
         ; Check pause state
@@ -91,17 +84,14 @@ main PROC
         je PausedState
         
         ; Normal game state processing
+        call Clrscr
         call UpdateGame
         call DrawGame
         jmp ContinueGameLoop
     
     PausedState:
-        ; In pause state, check if drawing is enabled
-        cmp pauseDrawEnabled, 1
-        jne SkipPauseDraw
+        ; Pause state only draws the screen
         call DrawGame
-    SkipPauseDraw:
-        ; Show pause message
         call DrawPauseMessage
         
     ContinueGameLoop:
@@ -130,7 +120,7 @@ main PROC
     @@:
         mov speed, eax
         
-        ; Game end condition
+        ; End condition
         cmp score, LEVEL_UP_SCORE * MAX_LEVEL
         jl ContinueGame
         mov gameRunning, 0
@@ -146,11 +136,11 @@ main PROC
     call WriteString
     call ReadChar
     
-    invoke ExitProcess, 0
+    call ExitProcess
 main ENDP
 
 ; ============================================================================
-; Draw pause message 
+; Pause Message 
 ; ============================================================================
 DrawPauseMessage PROC
     push eax
@@ -161,10 +151,11 @@ DrawPauseMessage PROC
     mov dl, 10
     mov dh, 10
     call Gotoxy
-    mov ecx, 30
+    mov ecx, 16
     mov al, ' '
 ClearLoop:
     call WriteChar
+    inc dl
     loop ClearLoop
 
     ; Display pause message
@@ -175,21 +166,6 @@ ClearLoop:
     call Gotoxy
     mov edx, OFFSET pauseMsg
     call WriteString
-    
-    ; Display drawing toggle option
-    mov dl, 10
-    mov dh, 12
-    call Gotoxy
-    mov edx, OFFSET pauseDrawMsg
-    call WriteString
-    cmp pauseDrawEnabled, 1
-    jne DisabledState
-    mov edx, OFFSET enabledStr
-    jmp ShowDrawState
-DisabledState:
-    mov edx, OFFSET disabledStr
-ShowDrawState:
-    call WriteString
 
     ; Restore registers
     pop ecx
@@ -199,7 +175,7 @@ ShowDrawState:
 DrawPauseMessage ENDP
 
 ; ============================================================================
-; Initialize game
+; Initialize Game
 ; ============================================================================
 InitGame PROC uses ecx edi eax
     ; Clear fruit array
@@ -222,7 +198,7 @@ InitGame PROC uses ecx edi eax
 InitGame ENDP
 
 ; =====================================================================
-; Show title screen
+; Show Game Title Screen
 ; =====================================================================
 ShowTitleScreen PROC
     call Clrscr
@@ -265,7 +241,7 @@ WaitForEnter:
 ShowTitleScreen ENDP
 
 ; =====================================================================
-; Show rules screen
+; Show Rules Screen
 ; =====================================================================
 ShowRulesScreen PROC
     call Clrscr
@@ -306,19 +282,18 @@ WaitForEnter:
     jne WaitForEnter
     ret
 ShowRulesScreen ENDP
-
 ; ============================================================================
-; Process input
+; Process Input
 ; ============================================================================
 ProcessInput PROC uses eax
     mov eax, 10            ; 10ms timeout setting
     call ReadKey           ; Non-blocking key read
-    jz NoInput             ; No key pressed, return directly
+    jz NoInput             ; If no key, return directly
 
-    ; Convert to uppercase for consistent handling
-    and al, 11011111b      ; Convert lowercase to uppercase (clear bit 5)
+    ; Convert to uppercase for uniform processing
+    and al, 11011111b      ; Convert lowercase to uppercase (clear 5th bit)
 
-    ; --- Handles these keys in all game states ---
+    ; --- Keys processed in all game states ---
     ; A key - Move left
     cmp al, 'A'
     jne NotAKey
@@ -340,41 +315,45 @@ NotDKey:
     ; Q key - Quit game
     cmp al, 'Q'
     jne NotQKey
-    mov gameRunning, 0     ; End game
+    mov gameRunning, 0     ; Game over
 NotQKey:
 
-    ; P key - Handle pause/resume
+    ; --- Pause/Resume specific handling ---
     cmp al, 'P'
-    jne NotPKey
-    
+    jne NoInput            ; If not P key, end processing
+
     ; Toggle based on current state
     cmp gamePaused, 1
-    je UnpauseGame        ; Currently paused, unpause
-    
+    je  UnpauseGame        ; Current state is paused, unpause
+
     ; Execute pause logic
-    mov gamePaused, 1
+    mov gamePaused, 1      ; Set pause flag
+    call DrawPauseMessage  ; Draw pause message
     jmp NoInput
-    
+
 UnpauseGame:
+    ; Execute unpause logic
+    mov gamePaused, 0      ; Clear pause flag
+    
     ; Show countdown (3 seconds)
-    mov eax, yellow
+    mov eax, yellow        ; Set yellow text
     call SetTextColor
     
-    mov ecx, 3             ; Count down from 3
+    mov ecx, 3             ; Count down 3 seconds
 CountdownLoop:
-    ; Display current countdown
+    ; Clear old message first
     mov dl, 10
-    mov dh, 14
+    mov dh, 10
     call Gotoxy
     mov edx, OFFSET resumeMsg
-    call WriteString
+    call WriteString       ; "Game will continue in X seconds"
     
-    ; Update the number position
-    mov dl, 30             ; X position
-    mov dh, 14
+    ; Dynamically update number position (override X)
+    mov dl, 19             ; X coordinate of X
+    mov dh, 10             ; Y coordinate of X
     call Gotoxy
     mov eax, ecx
-    call WriteDec
+    call WriteDec          ; Display current countdown number
     
     mov eax, 1000          ; Delay 1 second
     call Delay
@@ -382,31 +361,19 @@ CountdownLoop:
     
     ; Clear countdown message
     mov dl, 10
-    mov dh, 14
+    mov dh, 10
     call Gotoxy
-    mov ecx, 30
+    mov ecx, 16  
     mov al, ' '
-ClearMsgLoop:
+ClearLoop:
     call WriteChar
-    loop ClearMsgLoop
-    
-    ; Unpause
-    mov gamePaused, 0
-NotPKey:
-
-    ; T key - Toggle drawing while paused (only valid in pause state)
-    cmp gamePaused, 1
-    jne NoInput
-    cmp al, 'T'
-    jne NoInput
-    xor pauseDrawEnabled, 1    ; Toggle draw-while-paused option
+    loop ClearLoop
 
 NoInput:
     ret
 ProcessInput ENDP
-
-; ============================================================================
-; Update game logic
+;============================================================================
+; Update Game Logic
 ; ============================================================================
 UpdateGame PROC uses eax
     ; Generate new fruit
@@ -426,28 +393,29 @@ UpdateGame PROC uses eax
 UpdateGame ENDP
 
 ; ============================================================================
-; Add new fruit
+; Add New Fruit
+; Need to review this algorithm, RandomRange not used
 ; ============================================================================
 AddFruit PROC uses esi edi eax ebx ecx edx
-    ; Calculate spawn probability (using difficulty)
+    ; Calculate spawn probability (using difficulty instead of level)
     mov eax, 100
     call RandomRange
     
     ; Base probability + difficulty bonus (15% + 5% per difficulty level)
     mov ebx, 50                 ; Base probability 15%
     mov ecx, difficulty
-    imul ecx, 5                 ; Add 5% per difficulty level
+    imul ecx, 5                 ; 5% increase per difficulty level
     add ebx, ecx
     
     cmp eax, ebx
-    jge @F                      ; If random number > probability, don't spawn
+    jge @F                      ; If random number > probability value, don't spawn
     
     xor esi, esi                ; Start search from beginning
     
-    ; Find empty fruit slot
+    ; Find empty fruit position
     .while esi < MAX_FRUITS
         mov eax, esi
-        mov ecx, 16             ; Each fruit is 4 DWORDs = 16 bytes
+        mov ecx, 16             ; Each fruit is 4 DWORD = 16 bytes
         mul ecx
         add eax, OFFSET fruits
         mov edi, eax
@@ -456,16 +424,16 @@ AddFruit PROC uses esi edi eax ebx ecx edx
         cmp DWORD PTR [edi + 8], 0
         jne NextFruit
         
-        ; Set up new fruit
+        ; Set new fruit
         mov eax, SCREEN_WIDTH - 2
         call RandomRange
-        inc eax                 ; Avoid being on border, X range 1 to 38
+        inc eax                 ; Avoid border, X range 1 to 38
         mov [edi], eax          ; X position
         
         ; Set initial Y position (adjusted by difficulty)
         mov DWORD PTR [edi + 4], 1     ; Base Y position
         mov eax, difficulty
-        add DWORD PTR [edi + 4], eax   ; Higher difficulty starts lower
+        add DWORD PTR [edi + 4], eax   ; Higher difficulty = lower initial position
         
         mov DWORD PTR [edi + 8], 1     ; Set as active
         
@@ -485,7 +453,7 @@ Done:
 AddFruit ENDP
 
 ; ============================================================================
-; Update fruit positions
+; Update Fruit Positions
 ; ============================================================================
 UpdateFruits PROC uses esi eax ecx
     xor esi, esi
@@ -500,10 +468,10 @@ UpdateFruits PROC uses esi eax ecx
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        ; Move fruit down
+        ; Move fruit downward
         inc DWORD PTR [eax + 4]
         
-        ; Check if it reached bottom
+        ; Check if reached bottom
         cmp DWORD PTR [eax + 4], SCREEN_HEIGHT - 1
         jl NextFruit
         mov DWORD PTR [eax + 8], 0    ; Set as inactive
@@ -515,7 +483,7 @@ UpdateFruits PROC uses esi eax ecx
 UpdateFruits ENDP
 
 ; ============================================================================
-; Collision detection
+; Collision Detection
 ; ============================================================================
 CheckCollisions PROC uses esi eax ebx ecx edx
     xor esi, esi
@@ -533,7 +501,7 @@ CheckCollisions PROC uses esi eax ebx ecx edx
         mov ebx, [eax]          ; Fruit X
         mov ecx, [eax + 4]      ; Fruit Y
         
-        ; Check if at player row
+        ; Check if on player row
         cmp ecx, PLAYER_ROW
         jne NextFruit
         
@@ -556,7 +524,7 @@ CheckCollisions PROC uses esi eax ebx ecx edx
 CheckCollisions ENDP
 
 ; ============================================================================
-; Draw game screen
+; Draw Game Screen
 ; ============================================================================
 DrawGame PROC uses eax
     ; Draw border
@@ -590,7 +558,7 @@ DrawGame PROC uses eax
 DrawGame ENDP
 
 ; ============================================================================
-; Draw border
+; Draw Border
 ; ============================================================================
 DrawBorder PROC uses ecx edx
     ; Top border
@@ -636,7 +604,7 @@ DrawBorder PROC uses ecx edx
 DrawBorder ENDP
 
 ; ============================================================================
-; Draw fruits
+; Draw Fruits
 ; ============================================================================
 DrawFruits PROC uses esi eax ebx ecx edx
     xor esi, esi
@@ -671,7 +639,7 @@ DrawFruits PROC uses esi eax ebx ecx edx
 DrawFruits ENDP
 
 ; ============================================================================
-; Draw player
+; Draw Player
 ; ============================================================================
 DrawPlayer PROC uses eax edx
     mov dl, BYTE PTR playerPos
@@ -691,9 +659,9 @@ DrawPlayer PROC uses eax edx
 DrawPlayer ENDP
 
 ; ============================================================================
-; Display score
+; Display Score
 ; ============================================================================
-DisplayScore PROC uses eax edx;
+DisplayScore PROC uses eax edx
     mov dl, 0
     mov dh, SCREEN_HEIGHT + 1
     call Gotoxy
@@ -705,13 +673,5 @@ DisplayScore PROC uses eax edx;
     call Crlf
     ret
 DisplayScore ENDP
-
-; ============================================================================
-; Clear screen
-; ============================================================================
-ClearScreen PROC
-    call Clrscr
-    ret
-ClearScreen ENDP
 
 END main
