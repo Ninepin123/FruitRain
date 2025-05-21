@@ -618,7 +618,7 @@ DrawFruits PROC uses esi eax ebx ecx edx
         cmp DWORD PTR [eax + 8], 1    ; If fruit is active
         jne NextFruit
         
-        mov edx, [eax]              ; X123123123
+        mov edx, [eax]              ; X123123123 1235
         mov ebx, [eax + 4]          ; Y
         mov ecx, [eax + 12]         ; Type
         
