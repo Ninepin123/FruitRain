@@ -581,12 +581,28 @@ CheckCollisions PROC uses esi eax ebx ecx edx
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        mov ebx, [eax]
-        mov ecx, [eax + 4]
+        mov ebx, [eax]      ; X
+        mov ecx, [eax + 4]  ; Y
         
+        ; 檢查水果是否在籃子行或將在下一次移動後超過籃子行
         cmp ecx, PLAYER_ROW
-        jne NextFruit
+        je CheckXCollision  ; 如果在籃子行，檢查X方向碰撞
         
+        ; 檢查水果是否即將跳過籃子行
+        mov edx, PLAYER_ROW
+        sub edx, fruitDropSpeed  ; 計算水果可能的上一個位置
+        cmp ecx, edx
+        jl NextFruit  ; 如果水果在可能的上一個位置之上，跳過
+        
+        ; 水果會在下一次更新中跳過籃子行，檢查X方向碰撞
+        ; 首先計算水果下一次移動後的Y位置是否會超過籃子行
+        mov edx, ecx
+        add edx, fruitDropSpeed
+        cmp edx, PLAYER_ROW
+        jle NextFruit  ; 如果不會超過，跳過
+        
+        ; 水果會跳過籃子行，進行X方向碰撞檢測
+CheckXCollision:
         mov edx, playerPos
         cmp ebx, edx
         jl NextFruit
