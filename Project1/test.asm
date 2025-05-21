@@ -41,7 +41,7 @@ MIN_SPEED       = 50      ; Minimum game speed
     fruits          DWORD MAX_FRUITS * 4 dup(0)
     
     ; Game symbols
-    playerChar      BYTE "[===]", 0             ; Player basket
+    playerChar      BYTE "[===]", 0             ; Player basket hello hello
     fruitChars      BYTE "ABCDEFG", 0           ; Fruit symbols
 
     ; Title screen
