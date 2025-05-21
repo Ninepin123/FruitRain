@@ -8,8 +8,8 @@ ExitProcess PROTO, dwExitCode:DWORD
 ; ============================================================================
 ; Constants definition
 ; ============================================================================
-SCREEN_WIDTH     = 40      ; Game screen width
-SCREEN_HEIGHT    = 20      ; Game screen height test Pull Request
+SCREEN_WIDTH     = 40      ; Game screen width 
+SCREEN_HEIGHT    = 20      ; Game screen height NP test pull requst
 MAX_FRUITS       = 5       ; Maximum number of fruits
 PLAYER_ROW       = 18      ; Player basket row position
 MAX_LEVEL        = 5       ; Maximum level
