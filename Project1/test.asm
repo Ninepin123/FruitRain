@@ -1,10 +1,12 @@
 INCLUDE Irvine32.inc
+INCLUDELIB Winmm.lib
 
 .386
 .model flat,stdcall
 .stack 4096
-ExitProcess PROTO, dwExitCode:DWORD
 
+ExitProcess PROTO, dwExitCode:DWORD
+PlaySound PROTO, pszSound:PTR BYTE, hmod:DWORD, fdwSound:DWORD
 ; ============================================================================
 ; Constants Definition
 ; ============================================================================
@@ -63,7 +65,12 @@ MIN_SPEED       = 50      ; Minimum game speed
     rulesMsg5 BYTE "4. Level difficulty increases at certain score thresholds", 13, 10, 0        ; Every 30 points jumps one level
     rulesMsg6 BYTE "5. Press P key to pause the game", 13, 10, 0
     rulesMsg7 BYTE "6. Press Q key to quit the game", 13, 10, 0
-
+    ; Music
+    SND_ASYNC    DWORD 00000001h   ; 非同步播放
+    SND_LOOP     DWORD 00000008h   ; 循環播放
+    SND_FILENAME DWORD 00020000h   ; 聲音是文件名
+    backgroundMusic BYTE "background.wav", 0  ; 音樂文件名
+    combinedFlags DWORD 00020009h  ;
 .code
 ; ============================================================================
 ; Main Program
@@ -73,7 +80,7 @@ main PROC
     call InitGame
     call ShowTitleScreen
     call ShowRulesScreen
-    
+    invoke PlaySound, OFFSET backgroundMusic, 0, combinedFlags
     ; Game main loop
     .while gameRunning == 1
         ; Process input
@@ -135,7 +142,7 @@ main PROC
     mov edx, OFFSET gameOverMsg
     call WriteString
     call ReadChar
-    
+    invoke PlaySound, NULL, 0, 0
     call ExitProcess
 main ENDP
 
