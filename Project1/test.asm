@@ -6,66 +6,52 @@ INCLUDE Irvine32.inc
 ExitProcess PROTO, dwExitCode:DWORD
 
 ; ============================================================================
-; 常數定義
+; Constants definition
 ; ============================================================================
-SCREEN_WIDTH     = 40      ; 遊戲畫面寬度
-SCREEN_HEIGHT    = 20      ; 遊戲畫面高度
-MAX_FRUITS       = 5       ; 最多水果數量
-PLAYER_ROW       = 18      ; 玩家籃子的行位置
-MAX_LEVEL       = 5       ; 最大關卡數
-LEVEL_UP_SCORE  = 30      ; 每關所需分數
-BASE_SPEED      = 400     ; 基礎遊戲速度(ms)      ;數字越大越簡單
-MIN_SPEED       = 50      ; 最小遊戲速度
+SCREEN_WIDTH     = 40      ; Game screen width
+SCREEN_HEIGHT    = 20      ; Game screen height
+MAX_FRUITS       = 5       ; Maximum number of fruits
+PLAYER_ROW       = 18      ; Player basket row position
+MAX_LEVEL        = 5       ; Maximum level
+LEVEL_UP_SCORE   = 30      ; Score needed for each level
+BASE_SPEED       = 400     ; Base game speed (ms)      ; Higher number means easier
+MIN_SPEED        = 50      ; Minimum game speed
 
 ; ============================================================================
-; 資料區
+; Data section
 ; ============================================================================
 .data
-    ; 遊戲變數
-<<<<<<< HEAD
-    playerPos       DWORD ?                                         ; 玩家位置(列) 
-    score           DWORD ?                                         ; 分數
-    gameRunning     DWORD 1                                         ; 遊戲狀態，=1進行，=0停止
-    speed           DWORD 400                                       ; 遊戲速度(ms)
-    gamePaused      DWORD 0                                         ; 暫停狀態
-    pauseMsg        BYTE "遊戲暫停，按P繼續遊戲", 0
-    resumeMsg       BYTE "遊戲將在 X 秒後繼續", 0  
-=======
-    playerPos       DWORD 20             ; 玩家位置(列) 測試123123123
-    score           DWORD 0              ; 分數
-    gameRunning     DWORD 1              ; 遊戲狀態456
-    speed           DWORD 200            ; 遊戲速度(ms)
-    gamePaused      DWORD 0              ; 暫停狀態
-    pauseMsg        BYTE "遊戲暫停，按P繼續", 0
-    pauseDrawEnabled BYTE 1             ; 默認為1(啟用繪製)，0表示禁用
-    pauseDrawMsg    BYTE "暫停時繪製遊戲(按T切換): ", 0
-    enabledStr      BYTE "已啟用", 0
-    disabledStr     BYTE "已禁用", 0
-    resumeMsg       BYTE "遊戲將在 X 秒後恢復...", 0
+    ; Game variables
+    playerPos       DWORD 20                                        ; Player position (column)
+    score           DWORD 0                                         ; Score
+    gameRunning     DWORD 1                                         ; Game state, =1 running, =0 stopped
+    speed           DWORD 400                                       ; Game speed (ms)
+    gamePaused      DWORD 0                                         ; Pause state
+    pauseMsg        BYTE "Game Paused, Press P to continue", 0
+    pauseDrawEnabled BYTE 1                                         ; Default 1 (drawing enabled), 0 for disabled
+    pauseDrawMsg    BYTE "Draw game while paused (Press T to toggle): ", 0
+    enabledStr      BYTE "Enabled", 0
+    disabledStr     BYTE "Disabled", 0
+    resumeMsg       BYTE "Game will resume in X seconds", 0
     
-    ; 水果陣列 - 每個水果 4 個 DWORD: X, Y, active(1/0), type
+    ; Fruit array - Each fruit has 4 DWORDs: X, Y, active(1/0), type
     fruits          DWORD MAX_FRUITS * 4 dup(0)
     
-    ; 字串資料
-    titleMsg        BYTE "接水果遊戲", 13, 10, 0
-    instructMsg     BYTE "使用 A/D 鍵移動籃子，Q 鍵退出", 13, 10, 0
->>>>>>> 542e0af209d044a1bc9bf0f5515cf1f382df73cc
-    scoreMsg        BYTE "分數: ", 0
-    gameOverMsg     BYTE "遊戲結束! 按任意鍵退出...", 13, 10, 0
-    WinMsg          BYTE "你贏了！", 0
-    difficultyMsg   BYTE "目前難度: ", 0
-    difficulty      DWORD 1                                         ; 當前難度
-    pressEnterMsg BYTE 13,10,"點擊 Enter 鍵開始遊戲...",13,10,0    
-
-
-    ; 水果陣列 - 每個水果 4 個 DWORD: X, Y, active(1/0), type
-    fruits          DWORD MAX_FRUITS * 4 dup(0)
+    ; String data
+    titleMsg        BYTE "Fruit Catching Game", 13, 10, 0
+    instructMsg     BYTE "Use A/D keys to move basket, Q to quit", 13, 10, 0
+    scoreMsg        BYTE "Score: ", 0
+    gameOverMsg     BYTE "Game Over! Press any key to exit...", 13, 10, 0
+    WinMsg          BYTE "You Win!", 0
+    difficultyMsg   BYTE "Current Level: ", 0
+    difficulty      DWORD 1                                         ; Current difficulty
+    pressEnterMsg   BYTE 13,10,"Press Enter to start the game...",13,10,0    
     
-    ; 遊戲符號
-    playerChar      BYTE "[===]", 0             ; 玩家籃子
-    fruitChars      BYTE "ABCDEFG", 0           ; 水果符號
+    ; Game symbols
+    playerChar      BYTE "[===]", 0             ; Player basket
+    fruitChars      BYTE "ABCDEFG", 0           ; Fruit symbols
 
-    ;封面
+    ; Title screen
     titleArt1 BYTE 13,10,"  ________  _______   __    __  ______  ________        _______    ______   ______  __    __ ",13,10,0
     titleArt2 BYTE       " |        \|       \ |  \  |  \|      \|        \      |       \  /      \ |      \|  \  |  \",13,10,0
     titleArt3 BYTE       " | $$$$$$$$| $$$$$$$\| $$  | $$ \$$$$$$ \$$$$$$$$      | $$$$$$$\|  $$$$$$\ \$$$$$$| $$\ | $$",13,10,0
@@ -76,82 +62,53 @@ MIN_SPEED       = 50      ; 最小遊戲速度
     titleArt8 BYTE       " | $$      | $$  | $$ \$$    $$|   $$ \   | $$         | $$  | $$| $$  | $$|   $$ \| $$  \$$$",13,10,0
     titleArt9 BYTE       "  \$$       \$$   \$$  \$$$$$$  \$$$$$$    \$$          \$$   \$$ \$$   \$$ \$$$$$$ \$$   \$$",13,10,0
 
-    ;遊戲規則
-    rulesMsg1 BYTE "遊戲規則:", 13, 10, 0
-    rulesMsg2 BYTE "1. 使用 A/D 鍵左右移動籃子，請先確認輸入法轉為英文", 13, 10, 0
-    rulesMsg3 BYTE "2. 接住從天而降的水果(A-G)", 13, 10, 0
-    rulesMsg4 BYTE "3. 每接住一個水果得10分", 13, 10, 0
-    rulesMsg5 BYTE "4. 達到一定分數關卡難度會提升", 13, 10, 0                    ;每30分跳一級
-    rulesMsg6 BYTE "5. 按 P 鍵可暫停遊戲", 13, 10, 0
-    rulesMsg7 BYTE "6. 按 Q 鍵可退出遊戲", 13, 10, 0
+    ; Game rules
+    rulesMsg1 BYTE "Game Rules:", 13, 10, 0
+    rulesMsg2 BYTE "1. Use A/D keys to move basket left/right (make sure your input is in English)", 13, 10, 0
+    rulesMsg3 BYTE "2. Catch falling fruits (A-G)", 13, 10, 0
+    rulesMsg4 BYTE "3. Each fruit caught is worth 10 points", 13, 10, 0
+    rulesMsg5 BYTE "4. Difficulty increases at certain score thresholds", 13, 10, 0       ; Every 30 points
+    rulesMsg6 BYTE "5. Press P to pause the game", 13, 10, 0
+    rulesMsg7 BYTE "6. Press Q to quit the game", 13, 10, 0
 
 .code
 ; ============================================================================
-; 主程式
-; 會先初始化遊戲->顯示封面->顯示規則->進入遊戲->遊戲結束
+; Main procedure
+; Initializes game -> Shows title -> Shows rules -> Game loop -> Game over
 ; ============================================================================
 main PROC
     call InitGame
     call ShowTitleScreen
     call ShowRulesScreen
     
-   ; 遊戲主循環
+   ; Game main loop
     .while gameRunning == 1
-<<<<<<< HEAD
-        ;處理輸入
+        call Clrscr
         call ProcessInput
         
-        ; 檢查暫停狀態
+        ; Check pause state
         cmp gamePaused, 1
         je PausedState
         
-        ; 正常遊戲狀態的處理
-        call Clrscr
+        ; Normal game state processing
         call UpdateGame
         call DrawGame
         jmp ContinueGameLoop
     
     PausedState:
-        ; 暫停狀態只繪製畫面
+        ; In pause state, check if drawing is enabled
+        cmp pauseDrawEnabled, 1
+        jne SkipPauseDraw
         call DrawGame
+    SkipPauseDraw:
+        ; Show pause message
         call DrawPauseMessage
         
     ContinueGameLoop:
         mov eax, speed
-=======
-    call ClearScreen
-    call ProcessInput
-    
-    cmp gamePaused, 1
-    je PausedState
-    
-    ; 非暫停狀態：正常更新和繪製
-    call UpdateGame
-    call DrawGame
-    jmp ContinueGameLoop
-    
-PausedState:
-    ; 顯示暫停訊息
-    mov eax, yellow
-    call SetTextColor
-    mov dl, 10
-    mov dh, 10
-    call Gotoxy
-    mov edx, OFFSET pauseMsg
-    call WriteString
-    
-    ; 檢查是否需要在暫停時繪製
-    cmp pauseDrawEnabled, 1
-    jne SkipPauseDraw
-    call DrawGame
-SkipPauseDraw:
-    
-    ContinueGameLoop:
-        mov eax, speed   ; 使用動態速度
->>>>>>> 542e0af209d044a1bc9bf0f5515cf1f382df73cc
         call Delay
         
-        ; 檢查是否升級
+        ; Check for level up
         mov eax, score
         xor edx, edx
         mov ecx, LEVEL_UP_SCORE
@@ -163,7 +120,7 @@ SkipPauseDraw:
     @@:
         mov difficulty, eax
         
-        ; 更新遊戲速度
+        ; Update game speed
         mov eax, BASE_SPEED
         mov ebx, difficulty
         shr eax, 1
@@ -173,14 +130,14 @@ SkipPauseDraw:
     @@:
         mov speed, eax
         
-        ; 結束條件
+        ; Game end condition
         cmp score, LEVEL_UP_SCORE * MAX_LEVEL
         jl ContinueGame
         mov gameRunning, 0
     ContinueGame:
     .endw
     
-    ; 遊戲結束
+    ; Game over
     call Clrscr
     mov edx, offset WinMsg
     call WriteString
@@ -189,29 +146,28 @@ SkipPauseDraw:
     call WriteString
     call ReadChar
     
-    call ExitProcess
+    invoke ExitProcess, 0
 main ENDP
 
 ; ============================================================================
-; 暫停訊息 
+; Draw pause message 
 ; ============================================================================
 DrawPauseMessage PROC
     push eax
     push edx
     push ecx
 
-    ; 清除暫停訊息區域
+    ; Clear pause message area
     mov dl, 10
     mov dh, 10
     call Gotoxy
-    mov ecx, 16
+    mov ecx, 30
     mov al, ' '
 ClearLoop:
     call WriteChar
-    inc dl
     loop ClearLoop
 
-    ; 顯示暫停訊息
+    ; Display pause message
     mov eax, yellow
     call SetTextColor
     mov dl, 10
@@ -219,8 +175,23 @@ ClearLoop:
     call Gotoxy
     mov edx, OFFSET pauseMsg
     call WriteString
+    
+    ; Display drawing toggle option
+    mov dl, 10
+    mov dh, 12
+    call Gotoxy
+    mov edx, OFFSET pauseDrawMsg
+    call WriteString
+    cmp pauseDrawEnabled, 1
+    jne DisabledState
+    mov edx, OFFSET enabledStr
+    jmp ShowDrawState
+DisabledState:
+    mov edx, OFFSET disabledStr
+ShowDrawState:
+    call WriteString
 
-    ; 恢復暫存器
+    ; Restore registers
     pop ecx
     pop edx
     pop eax
@@ -228,35 +199,35 @@ ClearLoop:
 DrawPauseMessage ENDP
 
 ; ============================================================================
-; 初始化遊戲
+; Initialize game
 ; ============================================================================
 InitGame PROC uses ecx edi eax
-    ; 清空水果陣列
+    ; Clear fruit array
     mov ecx, MAX_FRUITS * 4
     mov edi, OFFSET fruits
     xor eax, eax
     rep stosd
     
-    ; 設置初始分數和玩家位置
+    ; Set initial score and player position
     mov score, 0
     mov playerPos, 20
     
-    ; 初始化隨機數種子
+    ; Initialize random number seed
     call Randomize
     
-    ; 設置文字顏色為白色
+    ; Set text color to white
     mov eax, white
     call SetTextColor
     ret
 InitGame ENDP
 
 ; =====================================================================
-; 顯示遊戲封面
+; Show title screen
 ; =====================================================================
 ShowTitleScreen PROC
     call Clrscr
     
-    ; 顯示遊戲標題
+    ; Display game title
     mov eax, cyan
     call SetTextColor
 
@@ -279,34 +250,34 @@ ShowTitleScreen PROC
     mov edx, OFFSET titleArt9
     call WriteString
 
-    ; 顯示提示訊息
+    ; Display prompt message
     mov eax, green
     call SetTextColor
     mov edx, OFFSET pressEnterMsg
     call WriteString
 
-    ; 等待 Enter 鍵
+    ; Wait for Enter key
 WaitForEnter:
     call ReadChar
-    cmp al, 13          ; Enter 鍵 ASCII = 13
+    cmp al, 13          ; Enter key ASCII = 13
     jne WaitForEnter
     ret
 ShowTitleScreen ENDP
 
 ; =====================================================================
-; 顯示規則畫面
+; Show rules screen
 ; =====================================================================
 ShowRulesScreen PROC
     call Clrscr
     
-    ; 顯示規則標題
+    ; Display rules title
     mov eax, yellow
     call SetTextColor
     mov edx, OFFSET rulesMsg1
     call WriteString
     call Crlf
     
-    ; 顯示規則
+    ; Display rules
     mov eax, white
     call SetTextColor
     mov edx, OFFSET rulesMsg2
@@ -322,291 +293,186 @@ ShowRulesScreen PROC
     mov edx, OFFSET rulesMsg7
     call WriteString
     
-    ; 顯示繼續提示
+    ; Display continue prompt
     mov eax, green
     call SetTextColor
     mov edx, OFFSET pressEnterMsg
     call WriteString
     
-    ; 等待 Enter 鍵
+    ; Wait for Enter key
 WaitForEnter:
     call ReadChar
-    cmp al, 13          ; Enter 鍵 ASCII = 13
+    cmp al, 13          ; Enter key ASCII = 13
     jne WaitForEnter
     ret
 ShowRulesScreen ENDP
+
 ; ============================================================================
-; 處理輸入
+; Process input
 ; ============================================================================
 ProcessInput PROC uses eax
-<<<<<<< HEAD
-    mov eax, 10            ; 10ms 超時設定
-    call ReadKey           ; 非阻塞讀取按鍵
-    jz NoInput             ; 沒有按鍵則直接返回
+    mov eax, 10            ; 10ms timeout setting
+    call ReadKey           ; Non-blocking key read
+    jz NoInput             ; No key pressed, return directly
 
-    ; 轉為大寫統一處理
-    and al, 11011111b      ; 轉換小寫為大寫 (清除第5位)
+    ; Convert to uppercase for consistent handling
+    and al, 11011111b      ; Convert lowercase to uppercase (clear bit 5)
 
-    ; --- 所有遊戲狀態都處理的按鍵 ---
-    ; A鍵 - 向左移動
+    ; --- Handles these keys in all game states ---
+    ; A key - Move left
     cmp al, 'A'
     jne NotAKey
-    cmp playerPos, 1        ; 檢查左邊界
+    cmp playerPos, 1        ; Check left boundary
     jle NotAKey
-    dec playerPos           ; 移動玩家位置
+    dec playerPos           ; Move player position
 NotAKey:
 
-    ; D鍵 - 向右移動
+    ; D key - Move right
     cmp al, 'D'
     jne NotDKey
     mov eax, playerPos
-    add eax, 5             ; 籃子寬度為5格
-    cmp eax, SCREEN_WIDTH  ; 檢查右邊界
+    add eax, 5             ; Basket width is 5 spaces
+    cmp eax, SCREEN_WIDTH  ; Check right boundary
     jge NotDKey
-    inc playerPos          ; 移動玩家位置
+    inc playerPos          ; Move player position
 NotDKey:
 
-    ; Q鍵 - 退出遊戲
+    ; Q key - Quit game
     cmp al, 'Q'
     jne NotQKey
-    mov gameRunning, 0     ; 遊戲結束
+    mov gameRunning, 0     ; End game
 NotQKey:
 
-    ; --- 暫停/繼續專用處理 ---
-    cmp al, 'P'
-    jne NoInput            ; 不是P鍵則結束處理
-
-    ; 根據當前狀態切換
-    cmp gamePaused, 1
-    je  UnpauseGame        ; 當前狀態是已暫停，取消暫停
-
-    ; 執行暫停邏輯
-    mov gamePaused, 1      ; 設置暫停標誌
-    call DrawPauseMessage  ; 繪製暫停訊息
-    jmp NoInput
-
-UnpauseGame:
-    ; 執行取消暫停邏輯
-    mov gamePaused, 0      ; 清除暫停標誌
-=======
-    mov eax, 10            ; 10ms timeout
-    call ReadKey           ; 非阻塞讀取
-    jz NoInput             ; 沒有按鍵
-    
-    ; 保存原始按键值
-    push eax               ; 保存按键值以备后用
-    
-    ; 轉為大寫
-    and al, 11011111b      ; 將小寫轉為大寫
-    
-    ; --- 所有状态下都处理的输入 ---
-    
-    ; A 鍵 - 向左移動
-    cmp al, 'A'
-    jne NotAKey
-    cmp playerPos, 1
-    jle NotAKey
-    dec playerPos
-NotAKey:
-    
-    ; D 鍵 - 向右移動
-    cmp al, 'D'
-    jne NotDKey
-    mov eax, playerPos
-    add eax, 6
-    cmp eax, SCREEN_WIDTH
-    jge NotDKey
-    inc playerPos
-NotDKey:
-    
-    ; Q 鍵 - 退出遊戲
-    cmp al, 'Q'
-    jne NotQKey
-    mov gameRunning, 0
-NotQKey:
-    
-    ; 恢复原始按键值
-    pop eax
-    and al, 11011111b      ; 將小寫轉為大寫
-    
-    ; --- 根据游戏状态处理特定输入 ---
-    
-    ; P 鍵 - 暫停/繼續遊戲
+    ; P key - Handle pause/resume
     cmp al, 'P'
     jne NotPKey
     
-    ; 檢查當前狀態
+    ; Toggle based on current state
     cmp gamePaused, 1
-    je SetUnpause           ; 如果當前已暫停，則設置為取消暫停
+    je UnpauseGame        ; Currently paused, unpause
     
-    ; 設置為暫停
+    ; Execute pause logic
     mov gamePaused, 1
-    jmp NotPKey
+    jmp NoInput
     
-SetUnpause:
-    ; 顯示倒計時訊息
+UnpauseGame:
+    ; Show countdown (3 seconds)
     mov eax, yellow
     call SetTextColor
+    
+    mov ecx, 3             ; Count down from 3
+CountdownLoop:
+    ; Display current countdown
     mov dl, 10
     mov dh, 14
     call Gotoxy
     mov edx, OFFSET resumeMsg
     call WriteString
     
-    ; 倒計時3秒
-    mov ecx, 3
-CountdownLoop:
-    push ecx                ; 保存計數器
-    
-    ; 顯示當前倒計時數字
-    mov dl, 19
+    ; Update the number position
+    mov dl, 19             ; X position
     mov dh, 14
     call Gotoxy
     mov eax, ecx
     call WriteDec
     
-    ; 延遲1秒
-    mov eax, 1000
+    mov eax, 1000          ; Delay 1 second
     call Delay
-    
-    pop ecx                 ; 恢復計數器
     loop CountdownLoop
     
-    ; 恢復遊戲
-    mov gamePaused, 0
-    
-    ; 清除倒計時訊息
+    ; Clear countdown message
     mov dl, 10
     mov dh, 14
     call Gotoxy
-    mov ecx, 40             ; 清除大約40個字符的空間
+    mov ecx, 30
     mov al, ' '
 ClearMsgLoop:
     call WriteChar
     loop ClearMsgLoop
     
+    ; Unpause
+    mov gamePaused, 0
 NotPKey:
-    
-    ; 检查游戏是否暂停（暂停时才处理特定输入）
+
+    ; T key - Toggle drawing while paused (only valid in pause state)
     cmp gamePaused, 1
     jne NoInput
-    
-    ; T 鍵 - 切換暫停時的繪製選項 (只在暫停時有效)
     cmp al, 'T'
     jne NoInput
-    xor pauseDrawEnabled, 1    ; 切換暫停時的繪製選項
->>>>>>> 542e0af209d044a1bc9bf0f5515cf1f382df73cc
-    
-    ; 顯示倒計時 (3秒)
-    mov eax, yellow        ; 設置黃色文字
-    call SetTextColor
-    
-    mov ecx, 3             ; 倒數3秒
-CountdownLoop:
-    ; 先清除舊訊息
-    mov dl, 10
-    mov dh, 10
-    call Gotoxy
-    mov edx, OFFSET resumeMsg
-    call WriteString       ; "遊戲將在 X 秒後恢復..."
-    
-    ; 動態更新數字位置 (覆蓋X)
-    mov dl, 19             ; X的X座標
-    mov dh, 10             ; X的Y座標
-    call Gotoxy
-    mov eax, ecx
-    call WriteDec          ; 顯示當前倒數數字
-    
-    mov eax, 1000          ; 延遲1秒
-    call Delay
-    loop CountdownLoop
-    
-    ; 清除倒數訊息
-    mov dl, 10
-    mov dh, 10
-    call Gotoxy
-    mov ecx, 16  
-    mov al, ' '
-ClearLoop:
-    call WriteChar
-    loop ClearLoop
+    xor pauseDrawEnabled, 1    ; Toggle draw-while-paused option
 
 NoInput:
     ret
 ProcessInput ENDP
-<<<<<<< HEAD
-;============================================================================
-=======
+
 ; ============================================================================
->>>>>>> 542e0af209d044a1bc9bf0f5515cf1f382df73cc
-; 更新遊戲邏輯
+; Update game logic
 ; ============================================================================
 UpdateGame PROC uses eax
-    ; 生成新水果
+    ; Generate new fruit
     mov eax, 100
     call RandomRange
-    cmp eax, 20            ; 20% 機率生成水果
+    cmp eax, 20            ; 20% chance to generate fruit
     jge @F
     call AddFruit
     @@:
     
-    ; 更新所有水果位置
+    ; Update all fruit positions
     call UpdateFruits
     
-    ; 碰撞檢測
+    ; Collision detection
     call CheckCollisions
     ret
 UpdateGame ENDP
 
 ; ============================================================================
-; 添加新水果
-; 這邊算法要再看一下，RandomRange沒用到
+; Add new fruit
 ; ============================================================================
 AddFruit PROC uses esi edi eax ebx ecx edx
-    ; 計算生成機率 (使用difficulty而不是level)
+    ; Calculate spawn probability (using difficulty)
     mov eax, 100
     call RandomRange
     
-    ; 基礎機率 + 難度加成 (15% + 5% per difficulty level)
-    mov ebx, 50                 ; 基礎機率 15%
+    ; Base probability + difficulty bonus (15% + 5% per difficulty level)
+    mov ebx, 50                 ; Base probability 15%
     mov ecx, difficulty
-    imul ecx, 5                 ; 每級難度增加5%
+    imul ecx, 5                 ; Add 5% per difficulty level
     add ebx, ecx
     
     cmp eax, ebx
-    jge @F                      ; 如果隨機數大於機率值則不生成
+    jge @F                      ; If random number > probability, don't spawn
     
-    xor esi, esi                ; 從頭開始搜索
+    xor esi, esi                ; Start search from beginning
     
-    ; 尋找空的水果位置
+    ; Find empty fruit slot
     .while esi < MAX_FRUITS
         mov eax, esi
-        mov ecx, 16             ; 每個水果 4 個 DWORD = 16 bytes
+        mov ecx, 16             ; Each fruit is 4 DWORDs = 16 bytes
         mul ecx
         add eax, OFFSET fruits
         mov edi, eax
         
-        ; 檢查是否活躍
+        ; Check if active
         cmp DWORD PTR [edi + 8], 0
         jne NextFruit
         
-        ; 設置新水果
+        ; Set up new fruit
         mov eax, SCREEN_WIDTH - 2
         call RandomRange
-        inc eax                 ; 避免在邊框上，X範圍 1 到 38
-        mov [edi], eax          ; X 位置
+        inc eax                 ; Avoid being on border, X range 1 to 38
+        mov [edi], eax          ; X position
         
-        ; 設置初始Y位置 (根據難度調整)
-        mov DWORD PTR [edi + 4], 1     ; 基礎Y位置
+        ; Set initial Y position (adjusted by difficulty)
+        mov DWORD PTR [edi + 4], 1     ; Base Y position
         mov eax, difficulty
-        add DWORD PTR [edi + 4], eax   ; 難度越高初始位置越低
+        add DWORD PTR [edi + 4], eax   ; Higher difficulty starts lower
         
-        mov DWORD PTR [edi + 8], 1     ; 設為活躍
+        mov DWORD PTR [edi + 8], 1     ; Set as active
         
-        ; 設置水果類型
+        ; Set fruit type
         mov eax, 7
         call RandomRange
-        mov DWORD PTR [edi + 12], eax  ; 水果類型
+        mov DWORD PTR [edi + 12], eax  ; Fruit type
         jmp Done
         
     NextFruit:
@@ -619,7 +485,7 @@ Done:
 AddFruit ENDP
 
 ; ============================================================================
-; 更新水果位置
+; Update fruit positions
 ; ============================================================================
 UpdateFruits PROC uses esi eax ecx
     xor esi, esi
@@ -630,17 +496,17 @@ UpdateFruits PROC uses esi eax ecx
         mul ecx
         add eax, OFFSET fruits
         
-        ; 檢查水果是否活躍
+        ; Check if fruit is active
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        ; 移動水果向下
+        ; Move fruit down
         inc DWORD PTR [eax + 4]
         
-        ; 檢查是否到底
+        ; Check if it reached bottom
         cmp DWORD PTR [eax + 4], SCREEN_HEIGHT - 1
         jl NextFruit
-        mov DWORD PTR [eax + 8], 0    ; 設為非活躍
+        mov DWORD PTR [eax + 8], 0    ; Set as inactive
         
     NextFruit:
         inc esi
@@ -649,7 +515,7 @@ UpdateFruits PROC uses esi eax ecx
 UpdateFruits ENDP
 
 ; ============================================================================
-; 碰撞檢測
+; Collision detection
 ; ============================================================================
 CheckCollisions PROC uses esi eax ebx ecx edx
     xor esi, esi
@@ -660,18 +526,18 @@ CheckCollisions PROC uses esi eax ebx ecx edx
         mul ecx
         add eax, OFFSET fruits
         
-        ; 檢查水果是否活躍
+        ; Check if fruit is active
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
         
-        mov ebx, [eax]          ; 水果 X
-        mov ecx, [eax + 4]      ; 水果 Y
+        mov ebx, [eax]          ; Fruit X
+        mov ecx, [eax + 4]      ; Fruit Y
         
-        ; 檢查是否在玩家行
+        ; Check if at player row
         cmp ecx, PLAYER_ROW
         jne NextFruit
         
-        ; 檢查 X 範圍碰撞
+        ; Check X range collision
         mov edx, playerPos
         cmp ebx, edx
         jl NextFruit
@@ -679,9 +545,9 @@ CheckCollisions PROC uses esi eax ebx ecx edx
         cmp ebx, edx
         jg NextFruit
         
-        ; 碰撞發生
-        mov DWORD PTR [eax + 8], 0    ; 水果消失
-        add score, 10                 ; 增加分數
+        ; Collision occurred
+        mov DWORD PTR [eax + 8], 0    ; Fruit disappears
+        add score, 10                 ; Increase score
         
     NextFruit:
         inc esi
@@ -690,29 +556,29 @@ CheckCollisions PROC uses esi eax ebx ecx edx
 CheckCollisions ENDP
 
 ; ============================================================================
-; 繪製遊戲畫面
+; Draw game screen
 ; ============================================================================
 DrawGame PROC uses eax
-    ; 繪製邊框
+    ; Draw border
     mov eax, white
     call SetTextColor
     call DrawBorder
     
-    ; 繪製水果
+    ; Draw fruits
     mov eax, yellow
     call SetTextColor
     call DrawFruits
     
-    ; 繪製玩家
+    ; Draw player
     mov eax, green
     call SetTextColor
     call DrawPlayer
     
-    ; 顯示分數
+    ; Display score
     mov eax, white
     call SetTextColor
     call DisplayScore
-    ; 顯示關卡
+    ; Display level
     mov dl, 20
     mov dh, SCREEN_HEIGHT + 1
     call Gotoxy
@@ -724,10 +590,10 @@ DrawGame PROC uses eax
 DrawGame ENDP
 
 ; ============================================================================
-; 繪製邊框
+; Draw border
 ; ============================================================================
 DrawBorder PROC uses ecx edx
-    ; 邊框
+    ; Top border
     mov dl, 0            ; Column
     mov dh, 0            ; Row
     call Gotoxy
@@ -738,7 +604,7 @@ DrawBorder PROC uses ecx edx
         dec ecx
     .endw
     
-    ; 下邊框
+    ; Bottom border
     mov dl, 0
     mov dh, SCREEN_HEIGHT - 1
     call Gotoxy
@@ -749,7 +615,7 @@ DrawBorder PROC uses ecx edx
         dec ecx
     .endw
     
-    ; 左右邊框
+    ; Left and right borders
     mov ebx, 1
     .while ebx < SCREEN_HEIGHT - 1
         mov dl, 0
@@ -770,7 +636,7 @@ DrawBorder PROC uses ecx edx
 DrawBorder ENDP
 
 ; ============================================================================
-; 繪製水果
+; Draw fruits
 ; ============================================================================
 DrawFruits PROC uses esi eax ebx ecx edx
     xor esi, esi
@@ -781,19 +647,19 @@ DrawFruits PROC uses esi eax ebx ecx edx
         mul ecx
         add eax, OFFSET fruits
         
-        cmp DWORD PTR [eax + 8], 1    ; 如果水果活躍
+        cmp DWORD PTR [eax + 8], 1    ; If fruit is active
         jne NextFruit
         
         mov edx, [eax]              ; X
         mov ebx, [eax + 4]          ; Y
-        mov ecx, [eax + 12]         ; 類型
+        mov ecx, [eax + 12]         ; Type
         
-        ; 移動游標到水果位置
+        ; Move cursor to fruit position
         mov dl, dl
         mov dh, bl
         call Gotoxy
         
-        ; 繪製水果符號
+        ; Draw fruit symbol
         add ecx, 'A'
         mov al, cl
         call WriteChar
@@ -805,14 +671,14 @@ DrawFruits PROC uses esi eax ebx ecx edx
 DrawFruits ENDP
 
 ; ============================================================================
-; 繪製玩家
+; Draw player
 ; ============================================================================
 DrawPlayer PROC uses eax edx
     mov dl, BYTE PTR playerPos
     mov dh, PLAYER_ROW
     call Gotoxy
     
-    ; 繪製籃子
+    ; Draw basket
     mov al, '['
     call WriteChar
     mov al, '='
@@ -825,7 +691,7 @@ DrawPlayer PROC uses eax edx
 DrawPlayer ENDP
 
 ; ============================================================================
-; 顯示分數
+; Display score
 ; ============================================================================
 DisplayScore PROC uses eax edx
     mov dl, 0
@@ -839,5 +705,13 @@ DisplayScore PROC uses eax edx
     call Crlf
     ret
 DisplayScore ENDP
+
+; ============================================================================
+; Clear screen
+; ============================================================================
+ClearScreen PROC
+    call Clrscr
+    ret
+ClearScreen ENDP
 
 END main
