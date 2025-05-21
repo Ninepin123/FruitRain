@@ -370,7 +370,7 @@ CountdownLoop:
     call WriteString
     
     ; Update the number position
-    mov dl, 19             ; X position
+    mov dl, 30             ; X position
     mov dh, 14
     call Gotoxy
     mov eax, ecx
