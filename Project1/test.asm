@@ -19,18 +19,20 @@ MAX_LEVEL        = 5       ; Maximum level for speed scaling
 LEVEL_UP_SCORE   = 30      ; Score needed per level
 BASE_SPEED       = 400     ; Base game speed (ms)
 MIN_SPEED        = 50      ; Minimum game speed
-BOMB_TYPE        = 7       ; Bomb type identifier (0-6 for fruits, 7 for bomb)
+BOMB_TYPE        = 5       ; Bomb type identifier (0-4 for fruits, 5 for bomb)
 MAX_LIVES        = 3       ; Maximum number of lives
 
 ; Color constants for SetTextColor
-red              = 12
-green            = 10
-blue             = 9
+red              = 4
+green            = 2
+blue             = 1
 yellow           = 14
-magenta          = 13
-cyan             = 11
+cyan             = 3
 white            = 15
-lightRed         = 4
+lightRed         = 12
+pink             = 13  
+orange           = 6    
+purple           = 5    
 
 ; ============================================================================
 ; Data Section
@@ -48,7 +50,6 @@ lightRed         = 4
     scoreMsg        BYTE "Score: ", 0
     livesMsg        BYTE "Lives: ", 0
     gameOverMsg     BYTE "Game Over! ", 13, 10, 0
-    winMsg          BYTE "You Win! ", 13, 10, 0
     yourScoreStr    BYTE "Your score: ", 0
     difficultyMsg   BYTE "Difficulty: ", 0
     difficulty      DWORD 2                                         ; Default difficulty: Normal
@@ -62,12 +63,11 @@ lightRed         = 4
     currentLevel    DWORD 1
     fruitDropSpeed  DWORD 1
     ; Fruit/bomb array - each has 4 DWORDs: X, Y, active(1/0), type
-    fruits          DWORD MAX_FRUITS * 4 dup(0)
+    fruits DWORD MAX_FRUITS * 5 dup(0)
 
     ; Game symbols
     playerChar      BYTE "[===]", 0             ; Player basket
-    fruitChars      BYTE "ABCDEFG@", 0          ; Fruit symbols + bomb (@)
-
+    fruitChars      BYTE "SBOGW@", 0          ; Fruit symbols + bomb (@)
     ; Title screen
     titleArt1 BYTE 13,10,"  ________  _______   __    __  ______  ________        _______    ______   ______  __    __ ",13,10,0
     titleArt2 BYTE       " |        \|       \ |  \  |  \|      \|        \      | $$$$$$$\|  $$$$$$\ \$$$$$$| $$\ | $$",13,10,0
@@ -82,12 +82,13 @@ lightRed         = 4
     ; Game rules
     rulesMsg1 BYTE "Game Rules:", 13, 10, 0
     rulesMsg2 BYTE "1. Use A/D keys to move the basket left and right, please make sure your input method is set to English", 13, 10, 0
-    rulesMsg3 BYTE "2. Catch the falling fruits (A-G)", 13, 10, 0
-    rulesMsg4 BYTE "3. Points: A/B=5, C/D=10, E/F=15, G=20", 13, 10, 0
+    rulesMsg3 BYTE "2. Catch the falling fruits: S(Strawberry), B(Banana), O(Orange), G(Grape), W(Watermelon)", 13, 10, 0
+    rulesMsg4 BYTE "3. Points: S=5, B=10, O=10, G=15, W=20", 13, 10, 0
     rulesMsg5 BYTE "4. Level difficulty increases at certain score thresholds", 13, 10, 0
     rulesMsg6 BYTE "5. Press P key to pause the game", 13, 10, 0
     rulesMsg7 BYTE "6. Press Q key to quit the game", 13, 10, 0
     rulesMsg8 BYTE "7. Avoid bombs (@) - catching one reduces lives (3 lives total)!", 13, 10, 0
+
 
     ; Music
     SND_ASYNC    DWORD 00000001h   ; Asynchronous playback
@@ -157,14 +158,14 @@ main PROC
         call Clrscr
         mov eax, white
         call SetTextColor
-        mov edx, OFFSET winMsg
         invoke PlaySound, NULL, 0, 0
-        call WriteString
-        call Crlf
         mov edx, OFFSET yourScoreStr
         call WriteString
         mov eax, score
         call WriteDec
+        call Crlf
+        mov edx, OFFSET gameOverMsg
+        call WriteString
         call Crlf
         call ReadChar
         INVOKE ExitProcess, 0
@@ -175,14 +176,14 @@ main PROC
     call Clrscr
     mov eax, white
     call SetTextColor
-    mov edx, OFFSET gameOverMsg
     invoke PlaySound, NULL, 0, 0
-    call WriteString
-    call Crlf
     mov edx, OFFSET yourScoreStr
     call WriteString
     mov eax, score
     call WriteDec
+    call Crlf
+    mov edx, OFFSET gameOverMsg
+    call WriteString
     call Crlf
     call ReadChar
     INVOKE ExitProcess, 0
@@ -200,7 +201,7 @@ DrawPauseMessage PROC
     mov dl, 4
     mov dh, 10
     call Gotoxy
-    mov ecx, 40
+    mov ecx, 20
     mov al, ' '
 ClearLoop:
     call WriteChar
@@ -209,7 +210,7 @@ ClearLoop:
 
     mov eax, yellow
     call SetTextColor
-    mov dl, 4
+    mov dl,4
     mov dh, 10
     call Gotoxy
     mov edx, OFFSET pauseMsg
@@ -245,7 +246,7 @@ InitGame ENDP
 ShowTitleScreen PROC
     call Clrscr
     
-    mov eax, cyan
+    mov eax, blue
     call SetTextColor
     mov edx, OFFSET titleArt1
     call WriteString
@@ -361,7 +362,7 @@ SetEasy:
 SetNormal:
     mov eax, 2
     mov difficulty, eax
-    mov eax, 400
+    mov eax, 450
     mov baseSpeed, eax
     mov eax, 30
     mov levelUpScore, eax
@@ -374,7 +375,7 @@ SetNormal:
 SetHard:
     mov eax, 3
     mov difficulty, eax
-    mov eax, 150
+    mov eax, 250
     mov baseSpeed, eax
     mov eax, 30
     mov levelUpScore, eax
@@ -438,7 +439,7 @@ CountdownLoop:
     mov dl, 4
     mov dh, 10
     call Gotoxy
-    mov ecx, 40
+    mov ecx, 20
     mov al, ' '
 ClearLoop:
     call WriteChar
@@ -491,115 +492,229 @@ UpdateGame ENDP
 ; Add New Fruit/Bomb
 ; ============================================================================
 AddFruit PROC uses esi edi eax ebx ecx edx
+    ; 1. 決定是否生成新水果 (根據機率)
     mov eax, 100
     call RandomRange
-    
+    mov edx, eax         ; 保存初始隨機值
+
+    ; 基礎閾值 + 難度修正
     mov ebx, 50
     mov ecx, difficulty
     imul ecx, 5
     add ebx, ecx
-    
-    cmp eax, ebx
+
+    ; 添加隨機波動 (-10 ~ +10)
+    push ebx
+    mov eax, 20
+    call RandomRange
+    sub eax, 10
+    pop ebx
+    add ebx, eax
+
+    ; 限制閾值在 20 ~ 70 範圍
+    cmp ebx, 20
     jge @F
-    
-    ; Find empty fruit position
-    xor esi, esi
-    mov ecx, MAX_FRUITS
-    .while esi < ecx
-        mov eax, esi
-        mov ecx, 16
-        mul ecx
-        add eax, OFFSET fruits
-        mov edi, eax
-        
-        cmp DWORD PTR [edi + 8], 0
-        jne NextFruit
-        
-        mov eax, SCREEN_WIDTH - 2
-        call RandomRange
-        inc eax
-        mov [edi], eax
-        
-        mov DWORD PTR [edi + 4], 1
-        mov eax, difficulty
-        add DWORD PTR [edi + 4], eax
-        mov DWORD PTR [edi + 8], 1
-        
-        ; Randomly decide fruit or bomb based on difficulty
-        mov eax, 100
-        call RandomRange
-        mov ecx, difficulty
-        cmp ecx, 1
-        je EasyBombChance
-        cmp ecx, 2
-        je NormalBombChance
-        cmp ecx, 3
-        je HardBombChance
-        jmp RegularFruit
-
-EasyBombChance:
-        cmp eax, 12
-        jl SetBomb
-        jmp RegularFruit
-
-NormalBombChance:
-        cmp eax, 25
-        jl SetBomb
-        jmp RegularFruit
-
-HardBombChance:
-        cmp eax, 40
-        jl SetBomb
-        jmp RegularFruit
-
-SetBomb:
-        mov DWORD PTR [edi + 12], BOMB_TYPE
-        jmp Done
-
-RegularFruit:
-        mov eax, 7
-        call RandomRange
-        mov DWORD PTR [edi + 12], eax
-        
-    NextFruit:
-        inc esi
-        mov ecx, MAX_FRUITS
-    .endw
-    
-Done:
+    mov ebx, 20
 @@:
+    cmp ebx, 70
+    jle @F
+    mov ebx, 70
+@@:
+
+    cmp edx, ebx
+    jge NoNewFruit        ; 不新增水果
+
+    ; 2. 尋找空位
+    mov eax, MAX_FRUITS
+    call RandomRange
+    mov esi, eax          ; 隨機起始索引
+
+    mov ecx, MAX_FRUITS
+SearchSlot:
+    mov eax, esi
+    mov edx, 20           ; 每個fruit佔20 bytes
+    mul edx
+    add eax, OFFSET fruits
+
+    cmp DWORD PTR [eax + 8], 0
+    je FoundEmptySlot     ; isActive == 0
+
+    inc esi
+    cmp esi, MAX_FRUITS
+    jl @F
+    xor esi, esi          ; 回繞
+@@:
+    loop SearchSlot
+    jmp NoNewFruit
+
+FoundEmptySlot:
+    mov edi, eax          ; edi 指向該 fruit 結構
+
+    ; 3. 隨機位置（避開邊界兩格）
+    mov eax, SCREEN_WIDTH
+    sub eax, 4
+    call RandomRange
+    add eax, 2
+    mov [edi], eax        ; xPos
+
+    ; Y 起始位置 1 + 偏移
+    mov DWORD PTR [edi + 4], 1
+    mov eax, 5
+    call RandomRange
+    sub eax, 2
+    add DWORD PTR [edi + 4], eax
+
+    ; 設定速度與活動狀態
+    mov ebx, 1
+    mov eax, difficulty
+    add ebx, eax
+    mov DWORD PTR [edi + 8], 1      ; isActive = 1
+    mov DWORD PTR [edi + 12], ebx   ; speed
+
+    ; 4. 水果 / 炸彈判定
+    mov eax, 100
+    call RandomRange
+
+    .if difficulty == 1
+        cmp eax, 15
+    .elseif difficulty == 2
+        cmp eax, 30
+    .else
+        cmp eax, 45
+    .endif
+    jl CreateBomb
+
+CreateFruit:
+    mov eax, 5
+    call RandomRange
+    jmp SetType
+
+CreateBomb:
+    mov eax, BOMB_TYPE
+
+SetType:
+    mov DWORD PTR [edi + 16], eax
+
+NoNewFruit:
     ret
 AddFruit ENDP
+
 
 ; ============================================================================
 ; Update Fruit Positions
 ; ============================================================================
 UpdateFruits PROC uses esi eax ecx ebx
     xor esi, esi
-    
+
     .while esi < MAX_FRUITS
         mov eax, esi
-        mov ecx, 16
+        mov ecx, 20
         mul ecx
         add eax, OFFSET fruits
-        
+
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
-        
-        ; Update Y coordinate based on difficulty
-        mov ebx, fruitDropSpeed
+
+        mov ebx, [eax + 12]        ; speed
+        mov ecx, [eax + 4]         ; yPos
         add DWORD PTR [eax + 4], ebx
-        
+
+        ; 檢查碰撞（在移動後立即檢查）
+        push esi
+        push eax
+        call CheckCollisionSingle
+        pop eax
+        pop esi
+
+        ; 若碰到底部，關閉水果
         cmp DWORD PTR [eax + 4], SCREEN_HEIGHT - 1
         jl NextFruit
         mov DWORD PTR [eax + 8], 0
-        
+
     NextFruit:
         inc esi
     .endw
     ret
 UpdateFruits ENDP
 
+CheckCollisionSingle PROC uses eax ebx ecx edx
+    ; eax 指向當前 fruit 結構
+    mov ebx, [eax]             ; xPos
+    mov ecx, [eax + 4]         ; yPos (當前 Y)
+    mov edx, ecx
+    sub edx, fruitDropSpeed    ; prevY = yPos - fruitDropSpeed
+
+    ; 檢查 Y 是否經過 PLAYER_ROW
+    cmp edx, PLAYER_ROW
+    jg Done
+    cmp ecx, PLAYER_ROW
+    jl Done
+
+    ; 檢查 X 座標
+    mov edx, playerPos
+    cmp ebx, edx
+    jle Done
+    add edx, 4
+    cmp ebx, edx
+    jge Done
+
+    ; 碰撞發生
+    cmp DWORD PTR [eax + 16], BOMB_TYPE
+    je BombHit
+
+    ; 是水果，處理加分
+    mov DWORD PTR [eax + 8], 0
+    mov ebx, [eax + 16]
+
+    cmp ebx, 0
+    je AddScore5
+    cmp ebx, 1
+    je AddScore10
+    cmp ebx, 2
+    je AddScore10
+    cmp ebx, 3
+    je AddScore15
+    cmp ebx, 4
+    je AddScore20
+    jmp Done
+
+AddScore5:
+    add score, 5
+    jmp Done
+AddScore10:
+    add score, 10
+    jmp Done
+AddScore15:
+    add score, 15
+    jmp Done
+AddScore20:
+    add score, 20
+    jmp Done
+
+BombHit:
+    mov DWORD PTR [eax + 8], 0
+    dec lives
+    cmp lives, 0
+    jg Done
+    mov gameRunning, 0
+    call Clrscr
+    mov eax, white
+    call SetTextColor
+    invoke PlaySound, NULL, 0, 0
+    mov edx, OFFSET yourScoreStr
+    call WriteString
+    mov eax, score
+    call WriteDec
+    call Crlf
+    mov edx, OFFSET gameOverMsg
+    call WriteString
+    call Crlf
+    call ReadChar
+    INVOKE ExitProcess, 0
+
+Done:
+    ret
+CheckCollisionSingle ENDP
 ; ============================================================================
 ; Collision Detection
 ; ============================================================================
@@ -608,56 +723,49 @@ CheckCollisions PROC uses esi eax ebx ecx edx
     
     .while esi < MAX_FRUITS
         mov eax, esi
-        mov ecx, 16
+        mov ecx, 20
         mul ecx
         add eax, OFFSET fruits
-        
+
         cmp DWORD PTR [eax + 8], 1
         jne NextFruit
-        
-        mov ebx, [eax]      ; X
-        mov ecx, [eax + 4]  ; Y
-        
-        ; Check if fruit is at basket row or will pass it
-        cmp ecx, PLAYER_ROW
-        je CheckXCollision
-        mov edx, PLAYER_ROW
-        sub edx, fruitDropSpeed
-        cmp ecx, edx
-        jl NextFruit
+
+        mov ebx, [eax]             ; xPos
+        mov ecx, [eax + 4]         ; yPos (當前 Y)
         mov edx, ecx
-        add edx, fruitDropSpeed
-        cmp edx, PLAYER_ROW
-        jle NextFruit
-        
+        sub edx, fruitDropSpeed    ; prevY = yPos - fruitDropSpeed
+
+        ; 檢查 Y 是否經過 PLAYER_ROW
+        cmp edx, PLAYER_ROW        ; prevY <= PLAYER_ROW
+        jg NextFruit
+        cmp ecx, PLAYER_ROW        ; currY >= PLAYER_ROW
+        jl NextFruit
+
 CheckXCollision:
         mov edx, playerPos
         cmp ebx, edx
-        jl NextFruit
+        jle NextFruit
         add edx, 4
         cmp ebx, edx
-        jg NextFruit
-        
-        ; Check if it's a bomb
-        cmp DWORD PTR [eax + 12], BOMB_TYPE
+        jge NextFruit
+
+        ; 碰撞發生，檢查是否炸彈
+        cmp DWORD PTR [eax + 16], BOMB_TYPE
         je BombHit
-        
-        ; Regular fruit collision - assign score based on fruit type
+
+        ; 是水果，處理加分
         mov DWORD PTR [eax + 8], 0
-        mov ebx, [eax + 12]  ; Get fruit type
-        cmp ebx, 0           ; Fruit A
+        mov ebx, [eax + 16]
+
+        cmp ebx, 0
         je AddScore5
-        cmp ebx, 1           ; Fruit B
-        je AddScore5
-        cmp ebx, 2           ; Fruit C
+        cmp ebx, 1
         je AddScore10
-        cmp ebx, 3           ; Fruit D
+        cmp ebx, 2
         je AddScore10
-        cmp ebx, 4           ; Fruit E
+        cmp ebx, 3
         je AddScore15
-        cmp ebx, 5           ; Fruit F
-        je AddScore15
-        cmp ebx, 6           ; Fruit G
+        cmp ebx, 4
         je AddScore20
         jmp NextFruit
 
@@ -673,34 +781,34 @@ AddScore15:
 AddScore20:
         add score, 20
         jmp NextFruit
-        
+
 BombHit:
         mov DWORD PTR [eax + 8], 0
         dec lives
         cmp lives, 0
         jg NextFruit
+
         mov gameRunning, 0
         call Clrscr
         mov eax, white
         call SetTextColor
-        mov edx, OFFSET gameOverMsg
         invoke PlaySound, NULL, 0, 0
-        call WriteString
-        call Crlf
         mov edx, OFFSET yourScoreStr
         call WriteString
         mov eax, score
         call WriteDec
         call Crlf
+        mov edx, OFFSET gameOverMsg
+        call WriteString
+        call Crlf
         call ReadChar
         INVOKE ExitProcess, 0
-        
-    NextFruit:
+
+NextFruit:
         inc esi
     .endw
     ret
 CheckCollisions ENDP
-
 ; ============================================================================
 ; Draw Game Screen
 ; ============================================================================
@@ -711,7 +819,7 @@ DrawGame PROC uses eax
     
     call DrawFruits
     
-    mov eax, green
+    mov eax, blue
     call SetTextColor
     call DrawPlayer
     
@@ -770,82 +878,86 @@ DrawBorder ENDP
 ; Draw Fruits/Bombs with Colors
 ; ============================================================================
 DrawFruits PROC uses esi eax ebx ecx edx
-    xor esi, esi
-    
+    xor esi, esi                    ; ESI 為 fruit 索引
+
     .while esi < MAX_FRUITS
         mov eax, esi
-        mov ecx, 16
+        mov ecx, 20
         mul ecx
-        add eax, OFFSET fruits
-        
-        cmp DWORD PTR [eax + 8], 1
-        jne NextFruit
-        
-        mov edx, [eax]              ; X
-        mov ebx, [eax + 4]          ; Y
-        mov ecx, [eax + 12]         ; Type
-        mov dl, dl
-        mov dh, bl
+        add eax, OFFSET fruits      ; EAX 指向 fruits[esi]
+
+        cmp DWORD PTR [eax + 8], 1  ; isActive == 1 ?
+        jne NextFruit               ; 如果非活動，跳過
+
+        ; 取得 X (EDX), Y (EBX), Type (ECX)
+        mov edx, [eax]              ; xPos
+        mov ebx, [eax + 4]          ; yPos
+        mov ecx, [eax + 16]         ; type
+
+        ; 設定游標位置
+        mov dl, BYTE PTR [eax]      ; DL = x (低8位)
+        mov dh, BYTE PTR [eax + 4]  ; DH = y
         call Gotoxy
-        
-        ; Set color based on fruit/bomb type
-        push eax
+
+        ; 設定文字顏色（根據 type）
+        push eax                    ; 保存 fruit 指標
+
         mov eax, ecx
         cmp eax, 0
-        je SetRed
-        cmp eax, 1
-        je SetGreen
-        cmp eax, 2
-        je SetBlue
-        cmp eax, 3
-        je SetYellow
-        cmp eax, 4
-        je SetMagenta
-        cmp eax, 5
-        je SetCyan
-        cmp eax, 6
-        je SetWhite
-        cmp eax, BOMB_TYPE
         je SetLightRed
-        jmp DrawCharacter
+        cmp eax, 1
+        je SetYellow
+        cmp eax, 2
+        je SetOrange
+        cmp eax, 3
+        je SetPurple
+        cmp eax, 4
+        je SetGreen
+        cmp eax, BOMB_TYPE
+        je SetRed
 
-SetRed:
-        mov eax, red
+        mov eax, white              ; 預設顏色
         jmp SetColor
-SetGreen:
-        mov eax, green
+
+    SetLightRed:
+        mov eax, lightRed
         jmp SetColor
-SetBlue:
-        mov eax, blue
-        jmp SetColor
-SetYellow:
+    SetYellow:
         mov eax, yellow
         jmp SetColor
-SetMagenta:
-        mov eax, magenta
+    SetOrange:
+        mov eax, orange
         jmp SetColor
-SetCyan:
-        mov eax, cyan
+    SetPurple:
+        mov eax, purple
         jmp SetColor
-SetWhite:
-        mov eax, white
+    SetGreen:
+        mov eax, green
         jmp SetColor
-SetLightRed:
-        mov eax, lightRed
-SetColor:
+    SetRed:
+        mov eax, red
+        ; 不用跳轉，直接落到 SetColor
+
+    SetColor:
         call SetTextColor
-DrawCharacter:
-        mov al, BYTE PTR [fruitChars + ecx]
+
+        mov eax, ecx
+        mov al, [fruitChars + eax]
         call WriteChar
+
+        ; 重設顏色
         mov eax, white
         call SetTextColor
-        pop eax
-        
+
+        pop eax                    ; 還原 fruit 結構指標
+
     NextFruit:
         inc esi
     .endw
+
     ret
 DrawFruits ENDP
+
 
 ; ============================================================================
 ; Draw Player
